@@ -1,0 +1,298 @@
+SpeedDate Karo - Proje Dokumantasyonu & Web Prompt
+===================================================
+
+Bu bir Speed Dating etkinlik yonetim uygulamasidir. Kafe/mekan ortaminda gercek hayatta yapilan speed dating etkinliklerini dijital olarak yonetir. Katilimcilar masalara oturtulur, belirli bir sure sohbet eder, sure bitince yeni eslesmeler yapilir ve herkes birbirleriyle tanisana kadar devam eder.
+
+
+1. ROLLER VE YETKILER
+=====================
+
+3 rol vardir: admin, moderator, participant
+
+ADMIN
+- Tum kullanicilari goruntuler (isim, email, rol)
+- Herhangi bir kullanicinin rolunu degistirebilir (participant → moderator, moderator → admin, vs.)
+- Tum eventleri goruntuler (baslik, masa sayisi, durum)
+- Sign out yapabilir
+- Kullanici silemez, sadece rol degistirir
+- Admin ekrani 2 tab'dan olusur: "Users" ve "Events"
+
+MODERATOR
+- Kendi event'lerini olusturur (baslik, masa sayisi, round suresi)
+- Kendi event'lerini listeler (sadece kendi olusturdugu eventler)
+- Kendi event'lerini silebilir (swipe-to-delete, onay dialog ile)
+- Event lobby'sinde katilimcilari canli gorur
+- "Start Session" butonuna basarak ilk round'u baslatir
+- Round suresi boyunca kac match tamamlandigini gorur (orn: "3/5 matches completed")
+- Roundlar arasi gecis otomatik olur (tum masalar bitince)
+- Tum eslesmeler tukenmisse event otomatik "completed" olur
+- Sign out yapabilir
+- Baska moderatorlerin eventlerini goremez/yonetemez
+
+PARTICIPANT
+- Acik eventleri gorur (status: "waiting" veya "active" olanlar)
+- Bir evente katilir (Join)
+- Event lobby'sinde moderatorun baslatmasini bekler
+- Eslestigi kisiyi ve masa numarasini gorur
+- "I'm at the table" butonuna basarak hazir oldugunu bildirir
+- Iki kisi de hazir olunca geri sayim baslar
+- Sure bitince diger masalari bekler ("Waiting for other tables... X tables still in progress")
+- Tum masalar bitince sonraki round otomatik baslar
+- Tum eslesmeler tukenmisse "Event Completed!" gorur
+- Sign out yapabilir
+
+
+2. VERI MODELLERI
+=================
+
+AppUser
+{
+  uid: string,           // Firebase Auth UID
+  displayName: string,   // Kullanicinin gorunen adi
+  email: string,         // Email adresi
+  role: "admin" | "moderator" | "participant",
+  createdAt: timestamp
+}
+
+Event
+{
+  eventId: string,              // Unique ID
+  title: string,                // Event baslik (orn: "Cuma Aksami Speed Date")
+  createdBy: string,            // Moderator UID
+  tableCount: number,           // Masa sayisi (1-20)
+  sessionDurationSeconds: number, // Round suresi saniye cinsinden (default 300 = 5dk)
+  status: "waiting" | "active" | "completed",
+  createdAt: timestamp,
+  currentRound: number          // Suanki round numarasi (0 = henuz baslamadi)
+}
+
+Participant (Event'in subcollection'i)
+{
+  uid: string,
+  displayName: string,
+  joinedAt: timestamp,
+  isReady: boolean
+}
+Collection path: events/{eventId}/participants/{uid}
+
+SpeedMatch (Event'in subcollection'i)
+{
+  matchId: string,              // UUID
+  round: number,                // Hangi round (1, 2, 3...)
+  tableNumber: number,          // Masa numarasi
+  participant1Uid: string,
+  participant2Uid: string,
+  participant1Ready: boolean,   // Masaya oturdu mu
+  participant2Ready: boolean,
+  sessionStartedAt: timestamp | null,  // Iki kisi de ready olunca server timestamp
+  sessionEndedAt: timestamp | null,    // Sure bitince server timestamp
+  status: "pending" | "in_progress" | "completed"
+}
+Collection path: events/{eventId}/matches/{matchId}
+
+
+3. FIRESTORE VERITABANI YAPISI
+==============================
+
+users/
+  {uid}/
+    - uid, displayName, email, role, createdAt
+
+events/
+  {eventId}/
+    - eventId, title, createdBy, tableCount, sessionDurationSeconds, status, createdAt, currentRound
+    participants/
+      {uid}/
+        - uid, displayName, joinedAt, isReady
+    matches/
+      {matchId}/
+        - matchId, round, tableNumber, participant1Uid, participant2Uid,
+          participant1Ready, participant2Ready, sessionStartedAt, sessionEndedAt, status
+
+
+4. ESLESTIRME ALGORITMASI (MatchingService)
+===========================================
+
+- Her round icin greedy matching algoritmasi kullanilir
+- Katilimcilar shuffle edilir (rastgele sira)
+- Her eslesmemis kisi icin, daha once eslesmedigi birini arar
+- Daha onceki tum roundlardaki match'ler kontrol edilir (past matches)
+- Pair key: iki uid'nin kucugu once olacak sekilde uid1_uid2 formatinda olusturulur (sira bagimsiz)
+- Masa numarasi: (match index % tableCount) + 1 — masalar dongusel olarak atanir
+- Tek sayida katilimci varsa bir kisi o round'da eslesmez ("No Match This Round" gorur)
+- Tum olasi ciftler tukenmisse allPaired = true doner
+- Toplam olasi eslesme sayisi: n * (n-1) / 2 (n = katilimci sayisi)
+
+
+5. ROUND VE SESSION AKISI
+==========================
+
+Event Olusturma:
+1. Moderator "+" butonuna basar
+2. Baslik, masa sayisi (1-20), round suresi (1, 2, 3, 5, 7, 10, 15 dakika) secer
+3. Event "waiting" statusuyle olusturulur, currentRound = 0
+
+Katilim:
+1. Participant acik eventleri gorur
+2. Bir evente tiklar → Event Lobby'ye gider
+3. Otomatik olarak participants subcollection'ina eklenir
+4. Moderatorun baslatmasini bekler
+
+Round Baslangici (Ilk Round):
+1. Moderator "Start Session" butonuna basar (min 2 katilimci gerekli)
+2. MatchingService.generateMatches() cagirilir
+3. Match'ler batch write ile Firestore'a yazilir
+4. Event guncellenir: currentRound = 1, status = "active"
+5. Moderator match listener'i baslatir
+
+Katilimci Round Akisi:
+1. Participant event status'un "active" oldugunu gorur → MatchView'a navigate eder
+2. Kendi match'ini Firestore'dan cekar (participant1Uid veya participant2Uid olarak arar)
+3. Esinin ismini ve masa numarasini gorur
+4. "I'm at the table" butonuna basar → participantXReady = true yazilir
+5. Iki kisi de ready olunca → sessionStartedAt = serverTimestamp(), status = "in_progress"
+6. Geri sayim baslar (server timestamp'tan hesaplanir)
+7. Sure bitince → sessionEndedAt = serverTimestamp(), status = "completed"
+8. "Waiting for other tables... X tables still in progress" gosterilir
+9. Tum masalar bitince → "Round Completed! Starting next round..."
+
+Otomatik Round Gecisi:
+1. Moderator'un listenToMatches listener'i tum round match'lerini dinler
+2. Tum match'ler completed olunca:
+   - allPaired == true ise → endEvent() cagirilir, event status = "completed"
+   - allPaired == false ise → startNextRound() cagirilir
+3. Sonraki round icin yeni match'ler olusturulur (onceki eslesmeler haric)
+4. Event currentRound guncellenir
+5. Participant'lar onChange(of: currentRound) ile yeni round'u algilayip yeni match'lerini cekerler
+
+Event Tamamlanmasi:
+- Tum olasi ciftler eslesmisse event otomatik olarak "completed" olur
+- Tum katilimcilar "Event Completed! You've met everyone." gorur
+
+
+6. REALTIME LISTENERS
+=====================
+
+| Listener                 | Kim kullanir          | Ne dinler                                              |
+|--------------------------|-----------------------|--------------------------------------------------------|
+| Event listener           | Moderator+Participant | Event document (status, currentRound degisiklikleri)   |
+| Participants listener    | Moderator             | participants subcollection (kac kisi katildi)          |
+| Match listener           | Participant           | Kendi match document'i (ready, status, sessionStarted) |
+| Round matches listener   | Moderator+Participant | O round'daki tum match'ler (kac masa bitti)            |
+
+
+7. SABITLER
+===========
+
+sessionDurationSeconds: 300        // Default 5 dakika
+minParticipantsToStart: 2          // Event baslatmak icin minimum katilimci
+minTableCount: 1
+maxTableCount: 20
+durationOptions: [1, 2, 3, 5, 7, 10, 15]  // Dakika cinsinden secenekler
+
+
+8. AUTHENTICATION
+=================
+
+- Firebase Authentication (Email/Password)
+- Kayit olurken: displayName, email, password alinir
+- Yeni kayit olan herkes default olarak "participant" roluyle olusturulur
+- Rol degisikligi sadece admin tarafindan yapilabilir
+- Auth state degisiklikleri listener ile dinlenir
+- Login sonrasi kullanicinin rolu Firestore'dan cekilir ve ilgili ekrana yonlendirilir
+
+
+9. EKRAN AKISI
+==============
+
+App Start
+  → AuthService: Firebase Auth dinle
+  → RoleRouter:
+      - isLoading → ProgressView
+      - currentAppUser == nil → LoginView
+      - role == admin → AdminHomeView (TabView: Users + Events)
+      - role == moderator → ModeratorHomeView → ModeratorLobbyView
+      - role == participant → ParticipantHomeView → EventLobbyView → MatchView
+
+LoginView → RegisterView (NavigationLink)
+
+
+10. WEB VERSIYONU ICIN PROMPT
+==============================
+
+Build a real-time speed dating event management web application with the following specifications:
+
+TECH STACK: Next.js (App Router), TypeScript, Firebase (Auth + Firestore), Tailwind CSS, real-time listeners
+
+ROLES & PERMISSIONS:
+- Admin: View all users, change any user's role (admin/moderator/participant), view all events. Admin panel has 2 tabs: "Users" and "Events".
+- Moderator: Create events (title, table count 1-20, round duration from [1,2,3,5,7,10,15] minutes), list own events only, delete own events (with confirmation), view event lobby with live participant count, start session (requires min 2 participants), see match completion progress per round (e.g. "3/5 completed"). Cannot see other moderators' events.
+- Participant: Browse open events (status: waiting or active), join an event, wait in lobby for moderator to start, see match partner name and table number, tap "I'm at the table" to mark ready, countdown timer starts when both ready, see "Waiting for other tables... X tables still in progress" after own session ends, automatic round transition when all tables finish.
+
+DATA MODELS:
+- User: { uid, displayName, email, role: "admin"|"moderator"|"participant", createdAt }
+- Event: { eventId, title, createdBy (moderator uid), tableCount, sessionDurationSeconds (default 300), status: "waiting"|"active"|"completed", createdAt, currentRound (starts at 0) }
+- Participant (subcollection of Event): { uid, displayName, joinedAt, isReady }
+- SpeedMatch (subcollection of Event): { matchId, round, tableNumber, participant1Uid, participant2Uid, participant1Ready, participant2Ready, sessionStartedAt (server timestamp), sessionEndedAt (server timestamp), status: "pending"|"in_progress"|"completed" }
+
+FIRESTORE STRUCTURE:
+users/{uid} - User documents
+events/{eventId} - Event documents
+events/{eventId}/participants/{uid} - Participant subcollection
+events/{eventId}/matches/{matchId} - Match subcollection
+
+MATCHING ALGORITHM:
+- Greedy matching with shuffle for randomization
+- Track all past matches across rounds to avoid repeat pairings
+- Pair key = sorted UIDs joined with underscore (order-independent)
+- Table assignment: (match_index % tableCount) + 1
+- Odd participant count: one person sits out with "No Match This Round" message
+- Total possible pairs: n*(n-1)/2. When exhausted, event auto-completes.
+
+ROUND FLOW:
+1. Moderator creates event → status="waiting", currentRound=0
+2. Participants join → added to participants subcollection
+3. Moderator clicks "Start Session" → generates matches for round 1, writes to matches subcollection via batch write, updates event: currentRound=1, status="active"
+4. Participants see their match (partner name + table number), press "I'm at the table"
+5. When both ready → sessionStartedAt=serverTimestamp(), status="in_progress", countdown starts
+6. Timer counts down from sessionDurationSeconds. Calculated from server timestamp for accuracy.
+7. When timer hits 0 → sessionEndedAt=serverTimestamp(), status="completed"
+8. Participant sees "Waiting for other tables... X tables still in progress"
+9. When ALL matches in the round are completed:
+   - If all possible pairs exhausted → event status="completed"
+   - Otherwise → auto-generate next round matches (excluding past pairs), increment currentRound
+10. Participants detect currentRound change and fetch their new match
+
+REAL-TIME REQUIREMENTS:
+- Event document: listened by both moderator and participants for status/round changes
+- Participants subcollection: listened by moderator for join count
+- Individual match document: listened by each participant for ready state and session status
+- Round matches query: listened by moderator and participants to track completion progress
+
+AUTHENTICATION:
+- Firebase Auth with email/password
+- New registrations default to "participant" role
+- Role stored in Firestore users collection
+- Role-based routing after login
+
+UI REQUIREMENTS:
+- Responsive design (mobile-first)
+- Login page with email/password + link to register
+- Register page with displayName, email, password, confirm password
+- Role-based dashboard routing
+- Event creation form with title, table stepper, duration picker (segmented)
+- Event list with title, table count, status badge (waiting=orange, active=green, completed=gray)
+- Event lobby showing live participant list with ready checkmarks
+- Match view showing partner name, table number, countdown timer (MM:SS format, red when <60s)
+- Session completed view: shows "Waiting for other tables..." with pending count, or "Round Completed! Starting next round..." when all done
+- Event completed view with celebratory message
+
+IMPORTANT IMPLEMENTATION NOTES:
+- Use Firestore batch writes for creating matches
+- Use FieldValue.serverTimestamp() for sessionStartedAt and sessionEndedAt
+- Timer should be calculated from server timestamp, not local clock
+- Both participants in a match should attempt to write completion (idempotent) in case one goes offline
+- Moderator must maintain active listeners for round auto-advancement to work
+- Clean up all listeners on component unmount
+- Use Firestore persistent cache for faster initial loads
+- Delete button for moderator's event list with confirmation dialog
