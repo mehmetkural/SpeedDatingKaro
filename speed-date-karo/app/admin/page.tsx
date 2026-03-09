@@ -4,6 +4,7 @@ import { useAuth } from '../../components/AuthProvider';
 import { useEffect, useState } from 'react';
 import { getAllUsers, updateUserRole, getAllEvents } from '../../lib/firestore';
 import { AppUser, Event } from '../../types';
+import SignOutButton from '../../components/SignOutButton';
 
 export default function Admin() {
   const { appUser } = useAuth();
@@ -18,46 +19,99 @@ export default function Admin() {
     }
   }, [appUser]);
 
-  if (appUser?.role !== 'admin') return <div>Access denied</div>;
+  if (appUser?.role !== 'admin') return <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white text-lg">Erişim Reddedildi</div>;
+
+  const handleRoleChange = async (uid: string, newRole: string) => {
+    await updateUserRole(uid, newRole);
+    setUsers(users.map(u => u.uid === uid ? { ...u, role: newRole as any } : u));
+  };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl mb-4">Admin Panel</h1>
-      <div className="flex mb-4">
-        <button onClick={() => setTab('users')} className={tab === 'users' ? 'bg-blue-500 text-white p-2' : 'p-2'}>Users</button>
-        <button onClick={() => setTab('events')} className={tab === 'events' ? 'bg-blue-500 text-white p-2' : 'p-2'}>Events</button>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Admin Paneli</h1>
+          <SignOutButton />
+        </div>
+
+        <div className="flex gap-4 mb-6 border-b border-gray-700">
+          <button
+            onClick={() => setTab('users')}
+            className={`px-4 py-2 font-bold rounded-t transition ${tab === 'users' ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+          >
+            Kullanıcılar ({users.length})
+          </button>
+          <button
+            onClick={() => setTab('events')}
+            className={`px-4 py-2 font-bold rounded-t transition ${tab === 'events' ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+          >
+            Etkinlikler ({events.length})
+          </button>
+        </div>
+
+        {tab === 'users' && (
+          <div>
+            {users.length === 0 ? (
+              <div className="text-center py-12 bg-gray-800 rounded border border-gray-700">
+                <p className="text-gray-400">Henüz kullanıcı yok</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {users.map(user => (
+                  <div key={user.uid} className="flex justify-between items-center p-4 border border-gray-700 rounded bg-gray-800 hover:bg-gray-700 transition">
+                    <div className="flex-1">
+                      <p className="font-bold text-white">{user.displayName}</p>
+                      <p className="text-sm text-gray-400">{user.email}</p>
+                    </div>
+                    <select
+                      value={user.role}
+                      onChange={(e) => handleRoleChange(user.uid, e.target.value)}
+                      className="p-2 border border-gray-600 rounded bg-gray-700 text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="participant">Katılımcı</option>
+                      <option value="moderator">Moderatör</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'events' && (
+          <div>
+            {events.length === 0 ? (
+              <div className="text-center py-12 bg-gray-800 rounded border border-gray-700">
+                <p className="text-gray-400">Henüz etkinlik yok</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {events.map(event => (
+                  <div key={event.eventId} className="p-4 border border-gray-700 rounded bg-gray-800 hover:bg-gray-700 transition">
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <p className="font-bold text-lg text-white">{event.title}</p>
+                        <p className="text-sm text-gray-400">Oluşturan: {event.createdBy}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-white">Masalar: {event.tableCount}</p>
+                        <span className={`px-3 py-1 rounded text-white text-sm font-medium inline-block ${
+                          event.status === 'waiting' ? 'bg-yellow-600' :
+                          event.status === 'active' ? 'bg-green-600' :
+                          'bg-gray-600'
+                        }`}>
+                          {event.status === 'waiting' ? 'Bekleniyor' : event.status === 'active' ? 'Aktif' : 'Tamamlandı'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      {tab === 'users' && (
-        <div>
-          <h2>Users</h2>
-          <ul>
-            {users.map(user => (
-              <li key={user.uid} className="flex justify-between p-2 border">
-                <span>{user.displayName} ({user.email}) - {user.role}</span>
-                <select value={user.role} onChange={(e) => updateUserRole(user.uid, e.target.value).then(() => {
-                  setUsers(users.map(u => u.uid === user.uid ? { ...u, role: e.target.value as any } : u));
-                })}>
-                  <option value="participant">Participant</option>
-                  <option value="moderator">Moderator</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {tab === 'events' && (
-        <div>
-          <h2>Events</h2>
-          <ul>
-            {events.map(event => (
-              <li key={event.eventId} className="p-2 border">
-                {event.title} - {event.status} - {event.tableCount} tables
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }

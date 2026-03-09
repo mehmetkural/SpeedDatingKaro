@@ -15,6 +15,8 @@ export interface Event {
   status: "waiting" | "active" | "completed";
   createdAt: Date;
   currentRound: number;
+  sessionStartedAt?: Date | null;
+  sessionEndedAt?: Date | null;
 }
 
 export interface Participant {
