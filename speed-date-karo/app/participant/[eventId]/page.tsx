@@ -45,6 +45,11 @@ export default function EventLobby() {
         );
         setCurrentMatch(myMatch || null);
         
+        // Debug: Check sessionStartedAt
+        if (myMatch) {
+          console.log('Match found - sessionStartedAt:', myMatch.sessionStartedAt, 'Round:', myMatch.round);
+        }
+        
         // Update user's ready status from match
         if (myMatch) {
           const isParticipant1 = myMatch.participant1Uid === appUser.uid;
@@ -217,8 +222,17 @@ export default function EventLobby() {
         )}
 
         {event.status === 'completed' && (
-          <div className="text-center p-6 bg-gradient-to-r from-blue-600 to-blue-500 rounded border border-blue-400 shadow-lg">
-            <p className="text-white font-bold text-lg">🎊 Etkinlik Tamamlandı! Herkesin ile tanıştınız.</p>
+          <div className="space-y-4 text-center">
+            <div className="p-6 bg-gradient-to-r from-green-600 to-green-500 rounded border border-green-400 shadow-lg">
+              <p className="text-white font-bold text-2xl">✨ Etkinlik Tamamlandı!</p>
+              <p className="text-white text-lg mt-2">Herkes ile tanıştınız. Harika geçti!</p>
+            </div>
+            <a
+              href="/participant"
+              className="block w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded font-bold hover:from-blue-600 hover:to-blue-700 transition shadow-lg"
+            >
+              ← Ana Menüye Dön
+            </a>
           </div>
         )}
       </div>

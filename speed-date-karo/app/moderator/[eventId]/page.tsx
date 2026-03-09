@@ -3,7 +3,7 @@
 import { useAuth } from '../../../components/AuthProvider';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { listenToEvent, listenToParticipants, generateMatches, listenToMatches, checkAndAdvanceRound } from '../../../lib/firestore';
+import { listenToEvent, listenToParticipants, generateMatches, listenToMatches, checkAndAdvanceRound, cancelSession } from '../../../lib/firestore';
 import { Event, Participant, SpeedMatch } from '../../../types';
 import SignOutButton from '../../../components/SignOutButton';
 
@@ -72,6 +72,20 @@ export default function ModeratorEventView() {
     setLoading(false);
   };
 
+  const handleCancelSession = async () => {
+    if (!confirm('Oturumu iptal etmek istediğinizden emin misiniz?')) {
+      return;
+    }
+    setLoading(true);
+    try {
+      await cancelSession(eventId);
+    } catch (err) {
+      console.error('Error canceling session:', err);
+      alert(`Hata: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`);
+    }
+    setLoading(false);
+  };
+
   const completedMatches = matches.filter(m => m.status === 'completed').length;
 
   return (
@@ -101,50 +115,81 @@ export default function ModeratorEventView() {
         </div>
       </div>
 
-      {event.status === 'waiting' && (
-        <button
-          onClick={handleStartSession}
-          disabled={loading || participants.length < 2}
-          className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white p-3 rounded font-bold hover:from-green-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed mb-6 transition shadow-lg"
-        >
-          {loading ? 'Başlatılıyor...' : 'Oturumu Başlat'}
-        </button>
-      )}
-
-      {event.status === 'active' && matches.length > 0 && (
-        <div className="p-4 bg-gradient-to-r from-green-600 to-green-500 rounded mb-6 border border-green-400">
-          <p className="text-lg font-bold text-white">İlerleme: {completedMatches}/{matches.length} maç tamamlandı</p>
+      {event.status === 'completed' && (
+        <div className="space-y-4 text-center">
+          <div className="p-8 bg-gradient-to-r from-green-600 to-green-500 rounded border-2 border-green-400 shadow-lg">
+            <p className="text-white font-bold text-3xl">✨ Etkinlik Başarıyla Tamamlandı!</p>
+            <p className="text-white text-lg mt-2">{participants.length} katılımcı, {event.currentRound} tur</p>
+          </div>
+          <a
+            href="/moderator"
+            className="block w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded font-bold hover:from-blue-600 hover:to-blue-700 transition shadow-lg"
+          >
+            ← Etkinliklere Dön
+          </a>
         </div>
       )}
 
-      <h2 className="text-2xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Katılımcılar ({participants.length})</h2>
-      <ul className="space-y-2 mb-6">
-        {participants.map(p => (
-          <li key={p.uid} className="flex items-center p-3 bg-gray-800 rounded border border-gray-700 hover:bg-gray-700 transition">
-            <span className="flex-1 font-semibold text-white">{p.displayName}</span>
-            {p.isReady && <span className="text-green-400 font-bold">✓ Hazır</span>}
-          </li>
-        ))}
-      </ul>
-
-      {matches.length > 0 && (
+      {event.status !== 'completed' && (
         <>
-          <h2 className="text-2xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Tur {event.currentRound} Maçları</h2>
-          <ul className="space-y-2">
-            {matches.map(match => (
-              <li key={match.matchId} className="p-3 bg-gray-800 rounded border border-gray-700 hover:bg-gray-700 transition">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-white">Masa {match.tableNumber}</span>
-                  <span className={`px-2 py-1 rounded text-white font-medium ${match.status === 'completed' ? 'bg-green-600' : 'bg-yellow-600'}`}>
-                    {match.status === 'completed' ? 'Tamamlandı' : 'Devam Ediyor'}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-400 mt-1">
-                  {match.participant2Uid ? `${match.participant1Uid.slice(0, 8)} ↔ ${match.participant2Uid.slice(0, 8)}` : 'Eşsiz'}
-                </p>
+          {event.status === 'waiting' && (
+            <button
+              onClick={handleStartSession}
+              disabled={loading || participants.length < 2}
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white p-3 rounded font-bold hover:from-green-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed mb-6 transition shadow-lg"
+            >
+              {loading ? 'Başlatılıyor...' : 'Oturumu Başlat'}
+            </button>
+          )}
+
+          {event.status === 'active' && (
+            <div className="flex gap-4 mb-6">
+              <button
+                onClick={handleCancelSession}
+                disabled={loading}
+                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white p-3 rounded font-bold hover:from-red-600 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg"
+              >
+                {loading ? 'İptal Ediliyor...' : '✕ Oturumu İptal Et'}
+              </button>
+            </div>
+          )}
+
+          {event.status === 'active' && matches.length > 0 && (
+            <div className="p-4 bg-gradient-to-r from-green-600 to-green-500 rounded mb-6 border border-green-400">
+              <p className="text-lg font-bold text-white">İlerleme: {completedMatches}/{matches.length} maç tamamlandı</p>
+            </div>
+          )}
+
+          <h2 className="text-2xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Katılımcılar ({participants.length})</h2>
+          <ul className="space-y-2 mb-6">
+            {participants.map(p => (
+              <li key={p.uid} className="flex items-center p-3 bg-gray-800 rounded border border-gray-700 hover:bg-gray-700 transition">
+                <span className="flex-1 font-semibold text-white">{p.displayName}</span>
+                {p.isReady && <span className="text-green-400 font-bold">✓ Hazır</span>}
               </li>
             ))}
           </ul>
+
+          {matches.length > 0 && (
+            <>
+              <h2 className="text-2xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Tur {event.currentRound} Maçları</h2>
+              <ul className="space-y-2">
+                {matches.map(match => (
+                  <li key={match.matchId} className="p-3 bg-gray-800 rounded border border-gray-700 hover:bg-gray-700 transition">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-white">Masa {match.tableNumber}</span>
+                      <span className={`px-2 py-1 rounded text-white font-medium ${match.status === 'completed' ? 'bg-green-600' : 'bg-yellow-600'}`}>
+                        {match.status === 'completed' ? 'Tamamlandı' : 'Devam Ediyor'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400 mt-1">
+                      {match.participant2Uid ? `${match.participant1Uid.slice(0, 8)} ↔ ${match.participant2Uid.slice(0, 8)}` : 'Eşsiz'}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </>
       )}
       </div>

@@ -64,11 +64,12 @@ export const generateMatches = async (eventId: string, tableCount: number): Prom
   // Write all matches
   matches.forEach(match => {
     const docRef = doc(db, 'events', eventId, 'matches', match.matchId);
+    const { sessionStartedAt, ...matchWithoutTimestamp } = match;
     const matchData = {
-      ...match,
-      sessionStartedAt: serverTimestamp()
+      ...matchWithoutTimestamp,
+      sessionStartedAt: null  // Timer starts when BOTH participants are ready
     };
-    batch.set(docRef, matchData);
+    batch.set(docRef, matchData as any);
   });
 
   // Update event status and round with sessionStartedAt
@@ -80,6 +81,14 @@ export const generateMatches = async (eventId: string, tableCount: number): Prom
   });
 
   await batch.commit();
+  
+  console.log('✓ Batch committed successfully');
+  console.log('Total matches written:', matches.length);
+  
+  // Verify by reading back one match
+  const firstMatchRef = doc(db, 'events', eventId, 'matches', matches[0].matchId);
+  const firstMatchSnap = await getDoc(firstMatchRef);
+  console.log('Verification - First match sessionStartedAt:', firstMatchSnap.data()?.sessionStartedAt);
 
   const totalPossiblePairs = participants.length * (participants.length - 1) / 2;
   const allPaired = pastPairSet.size + matches.filter(m => m.participant2Uid).length >= totalPossiblePairs;
@@ -233,9 +242,19 @@ export const markMatchParticipantReady = async (eventId: string, matchId: string
   const match = matchSnap.data();
   const isParticipant1 = match.participant1Uid === participantUid;
   
-  await setDoc(matchRef, {
+  const updateData: any = {
     [isParticipant1 ? 'participant1Ready' : 'participant2Ready']: true
-  }, { merge: true });
+  };
+  
+  // Check if both participants are ready
+  const bothReady = isParticipant1 ? match.participant2Ready : match.participant1Ready;
+  if (bothReady) {
+    // Both ready - start the timer
+    updateData.sessionStartedAt = serverTimestamp();
+    console.log('✓ Both participants ready - Timer started!');
+  }
+  
+  await setDoc(matchRef, updateData, { merge: true });
 };
 
 // Mark match as completed
@@ -286,4 +305,14 @@ export const checkAndAdvanceRound = async (eventId: string, round: number) => {
     // Start next round
     await generateMatches(eventId, event.tableCount);
   }
+};
+
+export const cancelSession = async (eventId: string) => {
+  const eventRef = doc(db, 'events', eventId);
+  await setDoc(eventRef, {
+    status: 'waiting',
+    currentRound: 0,
+    sessionStartedAt: null,
+    sessionEndedAt: null
+  }, { merge: true });
 };
