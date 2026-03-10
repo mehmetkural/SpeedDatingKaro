@@ -3,12 +3,12 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBiV6zLthJTffJawMlO6C2UbHI9JUjByyc",
-    authDomain: "speed-date-karo.firebaseapp.com",
-    projectId: "speed-date-karo",
-    storageBucket: "speed-date-karo.firebasestorage.app",
-    messagingSenderId: "647205295252",
-    appId: "1:647205295252:web:82059ed1e82681782d1081"
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
 // Note: Replace the above config with your actual Firebase project config from the Firebase Console.
