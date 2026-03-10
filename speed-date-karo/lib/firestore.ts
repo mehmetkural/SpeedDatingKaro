@@ -74,9 +74,14 @@ export const generateMatches = async (eventId: string, tableCount: number): Prom
 
   // Update event status and round with sessionStartedAt
   const eventRef = doc(db, 'events', eventId);
+  
+  // Calculate total rounds if not set (n participants = max n-1 rounds)
+  const totalRounds = event.totalRounds || Math.max(participants.length - 1, 1);
+  
   batch.update(eventRef, {
     status: 'active',
     currentRound: event.currentRound + 1,
+    totalRounds: totalRounds,
     sessionStartedAt: serverTimestamp()
   });
 

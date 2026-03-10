@@ -15,6 +15,7 @@ export interface Event {
   status: "waiting" | "active" | "completed";
   createdAt: Date;
   currentRound: number;
+  totalRounds?: number;  // Total expected rounds for this event
   sessionStartedAt?: Date | null;
   sessionEndedAt?: Date | null;
 }
