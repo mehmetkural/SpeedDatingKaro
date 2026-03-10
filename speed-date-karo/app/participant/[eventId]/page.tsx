@@ -193,7 +193,9 @@ export default function EventLobby() {
           </div>
           <div className="p-4 bg-gradient-to-br from-purple-400 to-purple-500 rounded shadow-md">
             <p className="text-sm text-white/80">Tur</p>
-            <p className="text-2xl font-bold text-white">{event.currentRound}</p>
+            <p className="text-2xl font-bold text-white">
+              {event.currentRound}{event.totalRounds ? `/${event.totalRounds}` : ''}
+            </p>
           </div>
           <div className="p-4 bg-gradient-to-br from-green-400 to-green-500 rounded shadow-md">
             <p className="text-sm text-white/80">Masalar</p>
@@ -225,8 +227,7 @@ export default function EventLobby() {
           <div className="space-y-4 text-center">
             <div className="p-6 bg-gradient-to-r from-green-600 to-green-500 rounded border border-green-400 shadow-lg">
               <p className="text-white font-bold text-2xl">✨ Etkinlik Tamamlandı!</p>
-              <p className="text-white text-lg mt-2">Herkes ile tanıştınız. Harika geçti!</p>
-            </div>
+              <p className="text-white text-lg mt-2">Herkes ile tanıştınız. Harika geçti!</p>              <p className="text-white text-md mt-2">Katılımınız için çok teşekkürler!</p>            </div>
             <a
               href="/participant"
               className="block w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded font-bold hover:from-blue-600 hover:to-blue-700 transition shadow-lg"

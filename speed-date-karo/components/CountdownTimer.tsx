@@ -15,6 +15,9 @@ export default function CountdownTimer({ sessionStartedAt, sessionDurationSecond
   useEffect(() => {
     if (!sessionStartedAt) return;
 
+    // reset time-up flag whenever a new session starts
+    setIsTimeUp(false);
+
     const interval = setInterval(() => {
       const now = Date.now();
       const startTime = new Date(sessionStartedAt).getTime();
