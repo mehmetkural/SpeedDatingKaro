@@ -15,16 +15,18 @@ export default function CountdownTimer({ sessionStartedAt, sessionDurationSecond
   const onTimeUpRef = useRef(onTimeUp);
   useEffect(() => { onTimeUpRef.current = onTimeUp; }, [onTimeUp]);
 
+  // Use numeric timestamp so a new Date object with the same value doesn't restart the effect
+  const startTimestamp = sessionStartedAt ? sessionStartedAt.getTime() : null;
+
   useEffect(() => {
-    if (!sessionStartedAt) return;
+    if (!startTimestamp) return;
 
     setIsTimeUp(false);
     firedRef.current = false;
 
     const interval = setInterval(() => {
       const now = Date.now();
-      const startTime = new Date(sessionStartedAt).getTime();
-      const endTime = startTime + sessionDurationSeconds * 1000;
+      const endTime = startTimestamp + sessionDurationSeconds * 1000;
       const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
 
       setRemainingSeconds(remaining);
@@ -37,7 +39,7 @@ export default function CountdownTimer({ sessionStartedAt, sessionDurationSecond
     }, 100);
 
     return () => clearInterval(interval);
-  }, [sessionStartedAt, sessionDurationSeconds]);
+  }, [startTimestamp, sessionDurationSeconds]);
 
   const minutes = Math.floor(remainingSeconds / 60);
   const seconds = remainingSeconds % 60;
