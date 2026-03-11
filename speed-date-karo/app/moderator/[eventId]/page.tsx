@@ -103,7 +103,7 @@ export default function ModeratorEventView() {
         </div>
         <div className="p-4 bg-gradient-to-br from-purple-400 to-purple-500 rounded shadow-md">
           <p className="text-sm text-white/80">Round</p>
-          <p className="text-2xl font-bold text-white">{event.currentRound}</p>
+          <p className="text-2xl font-bold text-white">{event.currentRound}{event.totalRounds ? `/${event.totalRounds}` : ''}</p>
         </div>
         <div className="p-4 bg-gradient-to-br from-green-400 to-green-500 rounded shadow-md">
           <p className="text-sm text-white/80">Participants</p>
