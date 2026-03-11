@@ -183,7 +183,9 @@ export default function ModeratorEventView() {
                       </span>
                     </div>
                     <p className="text-sm text-gray-400 mt-1">
-                      {match.participant2Uid ? `${match.participant1Uid.slice(0, 8)} ↔ ${match.participant2Uid.slice(0, 8)}` : 'Eşsiz'}
+                      {match.participant2Uid
+                        ? `${participants.find(p => p.uid === match.participant1Uid)?.displayName ?? match.participant1Uid.slice(0, 8)} ↔ ${participants.find(p => p.uid === match.participant2Uid)?.displayName ?? match.participant2Uid.slice(0, 8)}`
+                        : 'Eşsiz'}
                     </p>
                   </li>
                 ))}
