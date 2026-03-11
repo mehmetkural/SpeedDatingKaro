@@ -162,6 +162,29 @@ export default function EventLobby() {
     );
   }
 
+  // Bye round — session active but user has no match this round
+  if (event.status === 'active' && !currentMatch && matches.length > 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{event.title}</h1>
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-bold text-purple-300">Tur {event.currentRound}{event.totalRounds ? `/${event.totalRounds}` : ''}</span>
+              <SignOutButton />
+            </div>
+          </div>
+          <div className="text-center p-10 bg-gradient-to-br from-indigo-900 to-indigo-800 rounded-xl border-2 border-indigo-500 shadow-xl">
+            <p className="text-5xl mb-4">☕</p>
+            <h2 className="text-2xl font-bold text-white mb-2">Bu Tur Dinlenme Turunuz</h2>
+            <p className="text-indigo-200 text-lg">Katılımcı sayısı tek olduğundan bu turda eşleşmeniz yok.</p>
+            <p className="text-indigo-300 text-sm mt-4">Bir sonraki tur başlayana kadar bekleyin...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Match view when session is active
   if (event.status === 'active' && currentMatch) {
     const partnerUid = currentMatch.participant1Uid === appUser?.uid 
@@ -299,6 +322,12 @@ export default function EventLobby() {
         {event.status === 'waiting' && (
           <div className="text-center p-6 bg-gradient-to-r from-yellow-600 to-yellow-500 rounded border border-yellow-400 shadow-lg">
             <p className="text-white font-bold text-lg">⏳ Moderatör oturumu başlatması bekleniyor...</p>
+          </div>
+        )}
+
+        {event.status === 'active' && !currentMatch && matches.length === 0 && (
+          <div className="text-center p-6 bg-gradient-to-r from-blue-600 to-blue-500 rounded border border-blue-400 shadow-lg">
+            <p className="text-white font-bold text-lg">⏳ Tur başlatılıyor, lütfen bekleyin...</p>
           </div>
         )}
 
