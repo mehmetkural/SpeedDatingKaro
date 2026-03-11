@@ -12,6 +12,8 @@ export default function CountdownTimer({ sessionStartedAt, sessionDurationSecond
   const [remainingSeconds, setRemainingSeconds] = useState(sessionDurationSeconds);
   const [isTimeUp, setIsTimeUp] = useState(false);
   const firedRef = useRef(false);
+  const onTimeUpRef = useRef(onTimeUp);
+  useEffect(() => { onTimeUpRef.current = onTimeUp; }, [onTimeUp]);
 
   useEffect(() => {
     if (!sessionStartedAt) return;
@@ -30,12 +32,12 @@ export default function CountdownTimer({ sessionStartedAt, sessionDurationSecond
       if (remaining === 0 && !firedRef.current) {
         firedRef.current = true;
         setIsTimeUp(true);
-        onTimeUp?.();
+        onTimeUpRef.current?.();
       }
     }, 100);
 
     return () => clearInterval(interval);
-  }, [sessionStartedAt, sessionDurationSeconds, onTimeUp]);
+  }, [sessionStartedAt, sessionDurationSeconds]);
 
   const minutes = Math.floor(remainingSeconds / 60);
   const seconds = remainingSeconds % 60;
