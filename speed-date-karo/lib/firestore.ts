@@ -87,14 +87,6 @@ export const generateMatches = async (eventId: string, tableCount: number): Prom
 
   await batch.commit();
   
-  console.log('✓ Batch committed successfully');
-  console.log('Total matches written:', matches.length);
-  
-  // Verify by reading back one match
-  const firstMatchRef = doc(db, 'events', eventId, 'matches', matches[0].matchId);
-  const firstMatchSnap = await getDoc(firstMatchRef);
-  console.log('Verification - First match sessionStartedAt:', firstMatchSnap.data()?.sessionStartedAt);
-
   const totalPossiblePairs = participants.length * (participants.length - 1) / 2;
   const allPaired = pastPairSet.size + matches.filter(m => m.participant2Uid).length >= totalPossiblePairs;
 
