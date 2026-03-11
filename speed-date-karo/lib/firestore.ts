@@ -195,6 +195,17 @@ export const getMyEvents = async (moderatorUid: string): Promise<Event[]> => {
 };
 
 export const deleteEvent = async (eventId: string) => {
+  // Delete all sub-collections first, then the event document
+  const subcollections = ['participants', 'matches', 'ratings', 'announcements', 'waitlist'];
+
+  for (const sub of subcollections) {
+    const snap = await getDocs(collection(db, 'events', eventId, sub));
+    if (snap.empty) continue;
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  }
+
   await deleteDoc(doc(db, 'events', eventId));
 };
 
