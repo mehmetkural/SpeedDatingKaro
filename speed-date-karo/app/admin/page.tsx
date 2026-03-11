@@ -23,7 +23,7 @@ export default function Admin() {
 
   const handleRoleChange = async (uid: string, newRole: string) => {
     await updateUserRole(uid, newRole);
-    setUsers(users.map(u => u.uid === uid ? { ...u, role: newRole as any } : u));
+    setUsers(users.map(u => u.uid === uid ? { ...u, role: newRole as AppUser['role'] } : u));
   };
 
   return (

@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, setDoc, onSnapshot, query, where, orderBy, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, setDoc, onSnapshot, query, where, orderBy, writeBatch, serverTimestamp, DocumentData } from 'firebase/firestore';
 import { Event, Participant, SpeedMatch, AppUser, MatchRating, Announcement, WaitlistEntry } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -64,7 +64,7 @@ export const generateMatches = async (eventId: string, tableCount: number): Prom
   matches.forEach(match => {
     const docRef = doc(db, 'events', eventId, 'matches', match.matchId);
     const { sessionStartedAt, sessionEndedAt, ...rest } = match;
-    batch.set(docRef, { ...rest, sessionStartedAt: null, sessionEndedAt: null } as any);
+    batch.set(docRef, { ...rest, sessionStartedAt: null, sessionEndedAt: null });
   });
 
   const eventRef = doc(db, 'events', eventId);
@@ -81,11 +81,11 @@ export const generateMatches = async (eventId: string, tableCount: number): Prom
 };
 
 // Common
-const mapEvent = (id: string, data: Record<string, unknown>): Event => ({
+const mapEvent = (id: string, data: DocumentData): Event => ({
   ...data,
   eventId: id,
-  createdAt: (data.createdAt as { toDate?: () => Date })?.toDate?.() || new Date(),
-  scheduledAt: (data.scheduledAt as { toDate?: () => Date })?.toDate?.() || null,
+  createdAt: data.createdAt?.toDate?.() || new Date(),
+  scheduledAt: data.scheduledAt?.toDate?.() || null,
 } as Event);
 
 export const getEvent = async (eventId: string): Promise<Event | null> => {
@@ -252,16 +252,15 @@ export const markMatchParticipantReady = async (eventId: string, matchId: string
   const match = matchSnap.data();
   const isParticipant1 = match.participant1Uid === participantUid;
   
-  const updateData: any = {
+  type ReadyUpdate = { participant1Ready?: boolean; participant2Ready?: boolean; sessionStartedAt?: ReturnType<typeof serverTimestamp> };
+  const updateData: ReadyUpdate = {
     [isParticipant1 ? 'participant1Ready' : 'participant2Ready']: true
   };
-  
+
   // Check if both participants are ready
   const bothReady = isParticipant1 ? match.participant2Ready : match.participant1Ready;
   if (bothReady) {
-    // Both ready - start the timer
     updateData.sessionStartedAt = serverTimestamp();
-    console.log('✓ Both participants ready - Timer started!');
   }
   
   await setDoc(matchRef, updateData, { merge: true });
@@ -283,10 +282,10 @@ export const checkAndAdvanceRound = async (eventId: string, round: number) => {
   // Get all matches for current round
   const q = query(collection(db, 'events', eventId, 'matches'), where('round', '==', round));
   const querySnapshot = await getDocs(q);
-  const roundMatches = querySnapshot.docs.map(doc => ({
-    ...doc.data(),
-    matchId: doc.id
-  } as any));
+  const roundMatches = querySnapshot.docs.map(d => ({
+    ...d.data(),
+    matchId: d.id,
+  } as SpeedMatch));
 
   // Check if all matches are completed
   const allCompleted = roundMatches.length > 0 && roundMatches.every(m => m.status === 'completed');
