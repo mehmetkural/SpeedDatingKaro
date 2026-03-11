@@ -17,9 +17,12 @@ export interface Event {
   status: "waiting" | "active" | "completed";
   createdAt: Date;
   currentRound: number;
-  totalRounds?: number;  // Total expected rounds for this event
+  totalRounds?: number;
   sessionStartedAt?: Date | null;
   sessionEndedAt?: Date | null;
+  description?: string;
+  location?: string;
+  scheduledAt?: Date | null;
 }
 
 export interface Participant {

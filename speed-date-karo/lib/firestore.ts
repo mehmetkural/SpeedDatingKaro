@@ -81,16 +81,16 @@ export const generateMatches = async (eventId: string, tableCount: number): Prom
 };
 
 // Common
+const mapEvent = (id: string, data: Record<string, unknown>): Event => ({
+  ...data,
+  eventId: id,
+  createdAt: (data.createdAt as { toDate?: () => Date })?.toDate?.() || new Date(),
+  scheduledAt: (data.scheduledAt as { toDate?: () => Date })?.toDate?.() || null,
+} as Event);
+
 export const getEvent = async (eventId: string): Promise<Event | null> => {
   const docSnap = await getDoc(doc(db, 'events', eventId));
-  if (docSnap.exists()) {
-    const data = docSnap.data();
-    return {
-      ...data,
-      eventId: docSnap.id,
-      createdAt: data.createdAt?.toDate() || new Date()
-    } as Event;
-  }
+  if (docSnap.exists()) return mapEvent(docSnap.id, docSnap.data());
   return null;
 };
 
@@ -135,15 +135,8 @@ export const listenToAllMatches = (eventId: string, callback: (matches: SpeedMat
 };
 
 export const listenToEvent = (eventId: string, callback: (event: Event) => void) => {
-  return onSnapshot(doc(db, 'events', eventId), (doc) => {
-    if (doc.exists()) {
-      const data = doc.data();
-      callback({
-        ...data,
-        eventId: doc.id,
-        createdAt: data.createdAt?.toDate() || new Date()
-      } as Event);
-    }
+  return onSnapshot(doc(db, 'events', eventId), (snap) => {
+    if (snap.exists()) callback(mapEvent(snap.id, snap.data()));
   });
 };
 
@@ -183,11 +176,7 @@ export const getUserProfile = async (uid: string): Promise<AppUser | null> => {
 
 export const getAllEvents = async (): Promise<Event[]> => {
   const querySnapshot = await getDocs(collection(db, 'events'));
-  return querySnapshot.docs.map(doc => ({
-    ...doc.data(),
-    eventId: doc.id,
-    createdAt: doc.data().createdAt?.toDate() || new Date()
-  } as Event));
+  return querySnapshot.docs.map(d => mapEvent(d.id, d.data()));
 };
 
 // Moderator
@@ -202,11 +191,7 @@ export const createEvent = async (event: Omit<Event, 'eventId' | 'createdAt'>) =
 export const getMyEvents = async (moderatorUid: string): Promise<Event[]> => {
   const q = query(collection(db, 'events'), where('createdBy', '==', moderatorUid), orderBy('createdAt', 'desc'));
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({
-    ...doc.data(),
-    eventId: doc.id,
-    createdAt: doc.data().createdAt?.toDate() || new Date()
-  } as Event));
+  return querySnapshot.docs.map(d => mapEvent(d.id, d.data()));
 };
 
 export const deleteEvent = async (eventId: string) => {
@@ -217,11 +202,7 @@ export const deleteEvent = async (eventId: string) => {
 export const getOpenEvents = async (): Promise<Event[]> => {
   const q = query(collection(db, 'events'), where('status', 'in', ['waiting', 'active']), orderBy('createdAt', 'desc'));
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({
-    ...doc.data(),
-    eventId: doc.id,
-    createdAt: doc.data().createdAt?.toDate() || new Date()
-  } as Event));
+  return querySnapshot.docs.map(d => mapEvent(d.id, d.data()));
 };
 
 export const joinEvent = async (eventId: string, participant: Omit<Participant, 'joinedAt'>) => {

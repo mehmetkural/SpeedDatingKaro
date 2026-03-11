@@ -52,7 +52,12 @@ export default function Participant() {
               <div key={event.eventId} className="flex justify-between items-center p-4 border border-gray-700 rounded bg-gray-800 hover:bg-gray-700 transition">
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-white">{event.title}</h3>
-                  <p className="text-sm text-gray-400">Masalar: {event.tableCount} | Süre: {event.sessionDurationSeconds / 60} dakika</p>
+                  {event.description && <p className="text-sm text-gray-300 mt-1">{event.description}</p>}
+                  <div className="flex flex-wrap gap-3 mt-1">
+                    {event.location && <span className="text-xs text-gray-400">📍 {event.location}</span>}
+                    {event.scheduledAt && <span className="text-xs text-gray-400">🗓 {new Date(event.scheduledAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}</span>}
+                    <span className="text-xs text-gray-400">🪑 {event.tableCount} masa | ⏱ {event.sessionDurationSeconds / 60} dk</span>
+                  </div>
                 </div>
                 <button
                   onClick={() => handleJoin(event.eventId)}
