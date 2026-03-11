@@ -53,10 +53,28 @@ Roles are set in Firestore at `/users/{uid}.role` on registration.
 
 **Event lifecycle:** `waiting` → `active` → `completed`
 
-**Matching algorithm** (in `lib/firestore.ts`): prevents repeat pairings across rounds, shuffles randomly, assigns table numbers, calculates `totalRounds = max(participantCount - 1, 1)`, uses Firestore batch writes.
+**Matching algorithm** (in `lib/firestore.ts`): uses the **round-robin circle method** — fixes one participant, rotates the rest each round. Even n → n-1 rounds; odd n → n rounds with one bye per round. Uses Firestore batch writes. `generateMatches` is called once per round (both for round 1 via moderator UI and subsequent rounds via `checkAndAdvanceRound`).
 
 **Auth state** is managed by `components/AuthProvider.tsx` which wraps the root layout and provides `useAuth()` context throughout the app.
 
-## Environment
+**Firebase initialization** is guarded client-side only (`typeof window !== 'undefined'`) in `lib/firebase.ts` to prevent SSR errors during Vercel build.
 
-Firebase credentials are in `speed-date-karo/.env.local`. Firebase Security Rules must be deployed manually via the Firebase Console — see `FIREBASE_SETUP.md` for the required rules.
+**CountdownTimer** (`components/CountdownTimer.tsx`): uses `sessionStartedAt.getTime()` (numeric timestamp) as the effect dependency — not the Date object itself — to avoid re-triggering on Firestore listener re-renders that create new Date instances with the same value. Uses a `firedRef` to fire `onTimeUp` exactly once, and an `onTimeUpRef` to avoid stale closures.
+
+## Vercel Deployment
+
+- **Root Directory** must be set to `speed-date-karo` in Vercel project settings
+- All `NEXT_PUBLIC_FIREBASE_*` env vars must be added in Vercel → Settings → Environment Variables (Production + Preview + Development)
+- Firebase is on **Blaze plan** (pay-as-you-go) to avoid daily quota limits
+
+## Firebase Security Rules
+
+Firestore rules allow:
+- Any authenticated user to read users/events/participants/matches
+- Participants to update their own ready flags on match documents (`participant1Ready` / `participant2Ready`)
+- Moderators/admins to create events and write matches
+- Admins to update any user's role
+
+## Admin Account Setup
+
+There is no admin registration flow. To make a user admin: register normally on the site, then set `role: "admin"` on their `/users/{uid}` document directly in Firebase Console → Firestore.
