@@ -98,8 +98,13 @@ export default function ModeratorEventView() {
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="p-4 bg-gradient-to-br from-blue-400 to-blue-500 rounded shadow-md">
-          <p className="text-sm text-white/80">Status</p>
-          <p className="text-2xl font-bold text-white capitalize">{event.status}</p>
+          <p className="text-sm text-white/80">Durum</p>
+          <p className="text-2xl font-bold text-white">
+            {event.status === 'waiting' && 'Bekleniyor'}
+            {event.status === 'completed' && 'Tamamlandı'}
+            {event.status === 'active' && matches.length > 0 && completedMatches === matches.length && 'Tur Tamamlandı'}
+            {event.status === 'active' && (matches.length === 0 || completedMatches < matches.length) && 'Aktif'}
+          </p>
         </div>
         <div className="p-4 bg-gradient-to-br from-purple-400 to-purple-500 rounded shadow-md">
           <p className="text-sm text-white/80">Round</p>
