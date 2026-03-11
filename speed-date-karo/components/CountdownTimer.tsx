@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface CountdownTimerProps {
   sessionStartedAt: Date | null;
@@ -11,12 +11,13 @@ interface CountdownTimerProps {
 export default function CountdownTimer({ sessionStartedAt, sessionDurationSeconds, onTimeUp }: CountdownTimerProps) {
   const [remainingSeconds, setRemainingSeconds] = useState(sessionDurationSeconds);
   const [isTimeUp, setIsTimeUp] = useState(false);
+  const firedRef = useRef(false);
 
   useEffect(() => {
     if (!sessionStartedAt) return;
 
-    // reset time-up flag whenever a new session starts
     setIsTimeUp(false);
+    firedRef.current = false;
 
     const interval = setInterval(() => {
       const now = Date.now();
@@ -26,14 +27,15 @@ export default function CountdownTimer({ sessionStartedAt, sessionDurationSecond
 
       setRemainingSeconds(remaining);
 
-      if (remaining === 0 && !isTimeUp) {
+      if (remaining === 0 && !firedRef.current) {
+        firedRef.current = true;
         setIsTimeUp(true);
         onTimeUp?.();
       }
-    }, 100); // Update 10 times per second for smooth counting
+    }, 100);
 
     return () => clearInterval(interval);
-  }, [sessionStartedAt, sessionDurationSeconds, isTimeUp, onTimeUp]);
+  }, [sessionStartedAt, sessionDurationSeconds, onTimeUp]);
 
   const minutes = Math.floor(remainingSeconds / 60);
   const seconds = remainingSeconds % 60;
