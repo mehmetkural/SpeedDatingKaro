@@ -2,7 +2,7 @@
 
 import { useAuth } from '../../../components/AuthProvider';
 import { useEffect, useState } from 'react';
-import { listenToEvent, listenToParticipants, listenToMatches, markMatchParticipantReady, completeMatch, submitRating, getMutualMatches, getUserProfile } from '../../../lib/firestore';
+import { listenToEvent, listenToParticipants, listenToMatches, markMatchParticipantReady, completeMatch, submitRating, getMutualMatches, getUserProfile, getMyMatchHistory } from '../../../lib/firestore';
 import { Event, Participant, SpeedMatch, AppUser } from '../../../types';
 import { useParams } from 'next/navigation';
 import SignOutButton from '../../../components/SignOutButton';
@@ -22,6 +22,7 @@ export default function EventLobby() {
   const [ratedMatchIds, setRatedMatchIds] = useState<Set<string>>(new Set());
   const [mutualMatches, setMutualMatches] = useState<string[]>([]);
   const [partnerProfile, setPartnerProfile] = useState<AppUser | null>(null);
+  const [matchHistory, setMatchHistory] = useState<SpeedMatch[]>([]);
 
   useEffect(() => {
     if (!eventId) return;
@@ -81,10 +82,11 @@ export default function EventLobby() {
     }
   }, [currentMatch?.status, currentMatch?.matchId]);
 
-  // Load mutual matches when event completes
+  // Load mutual matches and history when event completes
   useEffect(() => {
     if (event?.status === 'completed' && appUser) {
       getMutualMatches(eventId, appUser.uid).then(setMutualMatches);
+      getMyMatchHistory(eventId, appUser.uid).then(setMatchHistory);
     }
   }, [event?.status, eventId, appUser]);
 
@@ -365,6 +367,27 @@ export default function EventLobby() {
                     return (
                       <li key={uid} className="py-2 px-4 bg-pink-800/50 rounded-lg font-bold text-white">
                         ❤️ {name}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {matchHistory.length > 0 && (
+              <div className="p-6 bg-gray-800 rounded border border-gray-700 shadow-lg text-left">
+                <p className="text-lg font-bold text-white mb-3">📋 Eşleşme Geçmişiniz</p>
+                <ul className="space-y-2">
+                  {matchHistory.map(m => {
+                    const partnerUid = m.participant1Uid === appUser?.uid ? m.participant2Uid : m.participant1Uid;
+                    const partnerName = participants.find(p => p.uid === partnerUid)?.displayName || partnerUid.slice(0, 8);
+                    const isMutual = mutualMatches.includes(partnerUid);
+                    return (
+                      <li key={m.matchId} className="flex items-center justify-between py-2 px-3 bg-gray-700 rounded">
+                        <span className="text-white font-medium">
+                          Tur {m.round} — {partnerName}
+                        </span>
+                        {isMutual && <span className="text-pink-400 text-sm font-bold">❤️ Match</span>}
                       </li>
                     );
                   })}

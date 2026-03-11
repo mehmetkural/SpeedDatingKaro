@@ -294,6 +294,20 @@ export const checkAndAdvanceRound = async (eventId: string, round: number) => {
   }
 };
 
+// Match history — all completed matches for a specific participant in an event
+export const getMyMatchHistory = async (eventId: string, uid: string): Promise<SpeedMatch[]> => {
+  const snap = await getDocs(collection(db, 'events', eventId, 'matches'));
+  return snap.docs
+    .map(d => ({
+      ...d.data(),
+      matchId: d.id,
+      sessionStartedAt: d.data().sessionStartedAt?.toDate() || null,
+      sessionEndedAt: d.data().sessionEndedAt?.toDate() || null,
+    } as SpeedMatch))
+    .filter(m => m.status === 'completed' && (m.participant1Uid === uid || m.participant2Uid === uid))
+    .sort((a, b) => a.round - b.round);
+};
+
 // Ratings
 export const submitRating = async (
   eventId: string,
