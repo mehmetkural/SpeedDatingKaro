@@ -2,8 +2,8 @@
 
 import { useAuth } from '../../../components/AuthProvider';
 import { useEffect, useState } from 'react';
-import { listenToEvent, listenToParticipants, listenToMatches, markMatchParticipantReady, completeMatch, submitRating, getMutualMatches, getUserProfile, getMyMatchHistory } from '../../../lib/firestore';
-import { Event, Participant, SpeedMatch, AppUser } from '../../../types';
+import { listenToEvent, listenToParticipants, listenToMatches, markMatchParticipantReady, completeMatch, submitRating, getMutualMatches, getUserProfile, getMyMatchHistory, listenToAnnouncements } from '../../../lib/firestore';
+import { Event, Participant, SpeedMatch, AppUser, Announcement } from '../../../types';
 import { useParams } from 'next/navigation';
 import SignOutButton from '../../../components/SignOutButton';
 import CountdownTimer from '../../../components/CountdownTimer';
@@ -23,16 +23,20 @@ export default function EventLobby() {
   const [mutualMatches, setMutualMatches] = useState<string[]>([]);
   const [partnerProfile, setPartnerProfile] = useState<AppUser | null>(null);
   const [matchHistory, setMatchHistory] = useState<SpeedMatch[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [dismissedAnnouncements, setDismissedAnnouncements] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!eventId) return;
 
     const unsubscribeEvent = listenToEvent(eventId, setEvent);
     const unsubscribeParticipants = listenToParticipants(eventId, setParticipants);
+    const unsubscribeAnnouncements = listenToAnnouncements(eventId, setAnnouncements);
 
     return () => {
       unsubscribeEvent();
       unsubscribeParticipants();
+      unsubscribeAnnouncements();
     };
   }, [eventId]);
 
@@ -197,17 +201,27 @@ export default function EventLobby() {
     );
   }
 
+  // Announcement banner component (shown across all views)
+  const activeAnnouncements = announcements.filter(a => !dismissedAnnouncements.has(a.id)).slice(0, 1);
+
   // Match view when session is active
   if (event.status === 'active' && currentMatch) {
-    const partnerUid = currentMatch.participant1Uid === appUser?.uid 
-      ? currentMatch.participant2Uid 
+    const partnerUid = currentMatch.participant1Uid === appUser?.uid
+      ? currentMatch.participant2Uid
       : currentMatch.participant1Uid;
-    
+
     const partnerName = participants.find(p => p.uid === partnerUid)?.displayName || 'Bilinmeyen';
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
         <div className="max-w-2xl mx-auto">
+          {activeAnnouncements.map(a => (
+            <div key={a.id} className="mb-4 p-3 bg-yellow-600 border border-yellow-400 rounded flex items-start gap-3">
+              <span className="text-xl shrink-0">📢</span>
+              <p className="flex-1 text-white font-semibold text-sm">{a.message}</p>
+              <button onClick={() => setDismissedAnnouncements(prev => new Set([...prev, a.id]))} className="text-yellow-200 hover:text-white text-lg leading-none shrink-0">✕</button>
+            </div>
+          ))}
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{event.title}</h1>
             <div className="flex items-center gap-3">
@@ -301,6 +315,13 @@ export default function EventLobby() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
       <div className="max-w-2xl mx-auto">
+        {activeAnnouncements.map(a => (
+          <div key={a.id} className="mb-4 p-3 bg-yellow-600 border border-yellow-400 rounded flex items-start gap-3">
+            <span className="text-xl shrink-0">📢</span>
+            <p className="flex-1 text-white font-semibold text-sm">{a.message}</p>
+            <button onClick={() => setDismissedAnnouncements(prev => new Set([...prev, a.id]))} className="text-yellow-200 hover:text-white text-lg leading-none shrink-0">✕</button>
+          </div>
+        ))}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{event.title}</h1>
           <SignOutButton />

@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, setDoc, onSnapshot, query, where, orderBy, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { Event, Participant, SpeedMatch, AppUser, MatchRating } from '../types';
+import { Event, Participant, SpeedMatch, AppUser, MatchRating, Announcement } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 // Matching Algorithm — round-robin circle method
@@ -292,6 +292,25 @@ export const checkAndAdvanceRound = async (eventId: string, round: number) => {
     // Start next round
     await generateMatches(eventId, event.tableCount);
   }
+};
+
+// Announcements
+export const sendAnnouncement = async (eventId: string, message: string) => {
+  await addDoc(collection(db, 'events', eventId, 'announcements'), {
+    message,
+    createdAt: serverTimestamp(),
+  });
+};
+
+export const listenToAnnouncements = (eventId: string, callback: (announcements: Announcement[]) => void) => {
+  const q = query(collection(db, 'events', eventId, 'announcements'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, snap => {
+    callback(snap.docs.map(d => ({
+      id: d.id,
+      message: d.data().message as string,
+      createdAt: d.data().createdAt?.toDate() || new Date(),
+    })));
+  });
 };
 
 // Match history — all completed matches for a specific participant in an event

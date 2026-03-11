@@ -45,6 +45,12 @@ export interface SpeedMatch {
   status: "pending" | "in_progress" | "completed";
 }
 
+export interface Announcement {
+  id: string;
+  message: string;
+  createdAt: Date;
+}
+
 export interface MatchRating {
   ratingId: string;
   matchId: string;
