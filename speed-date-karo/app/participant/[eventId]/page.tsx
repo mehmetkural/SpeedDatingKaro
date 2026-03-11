@@ -99,7 +99,10 @@ export default function EventLobby() {
         <div className="max-w-2xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{event.title}</h1>
-            <SignOutButton />
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-bold text-purple-300">Tur {event.currentRound}{event.totalRounds ? `/${event.totalRounds}` : ''}</span>
+              <SignOutButton />
+            </div>
           </div>
 
           {/* Timer */}
