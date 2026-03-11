@@ -6,6 +6,7 @@ import { getOpenEvents, joinEvent } from '../../lib/firestore';
 import { Event } from '../../types';
 import SignOutButton from '../../components/SignOutButton';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 export default function Participant() {
   const { appUser } = useAuth();
@@ -28,7 +29,7 @@ export default function Participant() {
       isReady: false,
     });
     if (waitlisted) {
-      alert('Etkinlik dolu. Bekleme listesine alındınız, yer açıldığında bildirim yapılacak.');
+      toast('⏳ Etkinlik dolu. Bekleme listesine alındınız!', { icon: '📋', duration: 5000 });
       return;
     }
     window.location.href = `/participant/${eventId}`;

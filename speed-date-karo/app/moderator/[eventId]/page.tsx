@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { listenToEvent, listenToParticipants, generateMatches, listenToMatches, listenToAllMatches, checkAndAdvanceRound, cancelSession, sendAnnouncement, listenToWaitlist, joinEvent, leaveWaitlist, pauseSession, resumeSession } from '../../../lib/firestore';
 import { Event, Participant, SpeedMatch, WaitlistEntry } from '../../../types';
 import SignOutButton from '../../../components/SignOutButton';
+import toast from 'react-hot-toast';
 
 export default function ModeratorEventView() {
   const { appUser } = useAuth();
@@ -67,7 +68,7 @@ export default function ModeratorEventView() {
 
   const handleStartSession = async () => {
     if (participants.length < 2) {
-      alert('At least 2 participants required');
+      toast.error('En az 2 katılımcı gerekli');
       return;
     }
     setLoading(true);
@@ -75,7 +76,7 @@ export default function ModeratorEventView() {
       await generateMatches(eventId, event.tableCount);
     } catch (err) {
       console.error('Error starting session:', err);
-      alert(`Error starting session: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      toast.error(`Oturum başlatma hatası: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`);
     }
     setLoading(false);
   };
@@ -89,7 +90,7 @@ export default function ModeratorEventView() {
       await cancelSession(eventId);
     } catch (err) {
       console.error('Error canceling session:', err);
-      alert(`Hata: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`);
+      toast.error(`Hata: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`);
     }
     setLoading(false);
   };
@@ -126,6 +127,7 @@ export default function ModeratorEventView() {
     try {
       await sendAnnouncement(eventId, announcementText.trim());
       setAnnouncementText('');
+      toast.success('Duyuru gönderildi');
     } catch (err) {
       console.error('Error sending announcement:', err);
     } finally {

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { createEvent } from '../../../lib/firestore';
 import SignOutButton from '../../../components/SignOutButton';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 export default function CreateEvent() {
   const { appUser } = useAuth();
@@ -40,7 +41,7 @@ export default function CreateEvent() {
       router.push(`/moderator/${eventId}`);
     } catch (err) {
       console.error('Error creating event:', err);
-      alert(`Etkinlik oluşturma hatası: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`);
+      toast.error(`Etkinlik oluşturma hatası: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`);
       setLoading(false);
     }
   };

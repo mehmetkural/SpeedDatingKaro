@@ -7,6 +7,7 @@ import { Event, Participant, SpeedMatch, AppUser, Announcement } from '../../../
 import { useParams } from 'next/navigation';
 import SignOutButton from '../../../components/SignOutButton';
 import CountdownTimer from '../../../components/CountdownTimer';
+import toast from 'react-hot-toast';
 
 export default function EventLobby() {
   const { appUser } = useAuth();
@@ -121,7 +122,7 @@ export default function EventLobby() {
       setUserReady(true);
     } catch (err) {
       console.error('Error marking ready:', err);
-      alert('Hata: Hazır durumu güncellenemedi');
+      toast.error('Hazır durumu güncellenemedi');
     } finally {
       setIsReadyLoading(false);
     }
