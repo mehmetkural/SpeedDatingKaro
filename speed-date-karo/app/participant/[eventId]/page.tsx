@@ -2,8 +2,8 @@
 
 import { useAuth } from '../../../components/AuthProvider';
 import { useEffect, useState } from 'react';
-import { listenToEvent, listenToParticipants, listenToMatches, markMatchParticipantReady, completeMatch, submitRating, getMutualMatches } from '../../../lib/firestore';
-import { Event, Participant, SpeedMatch } from '../../../types';
+import { listenToEvent, listenToParticipants, listenToMatches, markMatchParticipantReady, completeMatch, submitRating, getMutualMatches, getUserProfile } from '../../../lib/firestore';
+import { Event, Participant, SpeedMatch, AppUser } from '../../../types';
 import { useParams } from 'next/navigation';
 import SignOutButton from '../../../components/SignOutButton';
 import CountdownTimer from '../../../components/CountdownTimer';
@@ -21,6 +21,7 @@ export default function EventLobby() {
   const [lastCompletedMatch, setLastCompletedMatch] = useState<SpeedMatch | null>(null);
   const [ratedMatchIds, setRatedMatchIds] = useState<Set<string>>(new Set());
   const [mutualMatches, setMutualMatches] = useState<string[]>([]);
+  const [partnerProfile, setPartnerProfile] = useState<AppUser | null>(null);
 
   useEffect(() => {
     if (!eventId) return;
@@ -63,6 +64,15 @@ export default function EventLobby() {
 
     return () => unsubscribeMatches();
   }, [eventId, event, appUser]);
+
+  // Load partner profile when match changes
+  useEffect(() => {
+    if (!currentMatch || !appUser) { setPartnerProfile(null); return; }
+    const partnerUid = currentMatch.participant1Uid === appUser.uid
+      ? currentMatch.participant2Uid
+      : currentMatch.participant1Uid;
+    getUserProfile(partnerUid).then(setPartnerProfile);
+  }, [currentMatch?.matchId, appUser]);
 
   // Track last completed match for rating overlay
   useEffect(() => {
@@ -246,6 +256,12 @@ export default function EventLobby() {
             <div className="p-6 bg-gradient-to-br from-blue-900 to-blue-800 rounded border-2 border-blue-500 shadow-lg">
               <p className="text-sm text-blue-300 mb-2">Eşinizin Bilgileri</p>
               <p className="text-2xl font-bold text-white">{partnerName}</p>
+              {partnerProfile?.bio && (
+                <p className="text-sm text-blue-200 mt-2 italic">&ldquo;{partnerProfile.bio}&rdquo;</p>
+              )}
+              {partnerProfile?.interests && (
+                <p className="text-xs text-blue-300 mt-1">🎯 {partnerProfile.interests}</p>
+              )}
               <p className={`text-sm mt-2 ${
                 (currentMatch.participant1Uid === appUser?.uid ? currentMatch.participant2Ready : currentMatch.participant1Ready)
                   ? 'text-blue-300'

@@ -170,6 +170,17 @@ export const updateUserRole = async (uid: string, role: string) => {
   await updateDoc(doc(db, 'users', uid), { role });
 };
 
+export const updateUserProfile = async (uid: string, data: { bio?: string; interests?: string; displayName?: string }) => {
+  await setDoc(doc(db, 'users', uid), data, { merge: true });
+};
+
+export const getUserProfile = async (uid: string): Promise<AppUser | null> => {
+  const snap = await getDoc(doc(db, 'users', uid));
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  return { ...data, createdAt: data.createdAt?.toDate() || new Date() } as AppUser;
+};
+
 export const getAllEvents = async (): Promise<Event[]> => {
   const querySnapshot = await getDocs(collection(db, 'events'));
   return querySnapshot.docs.map(doc => ({

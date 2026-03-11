@@ -4,6 +4,8 @@ export interface AppUser {
   email: string;
   role: "admin" | "moderator" | "participant";
   createdAt: Date;
+  bio?: string;
+  interests?: string;
 }
 
 export interface Event {

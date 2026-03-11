@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { getOpenEvents, joinEvent } from '../../lib/firestore';
 import { Event } from '../../types';
 import SignOutButton from '../../components/SignOutButton';
+import Link from 'next/link';
 
 export default function Participant() {
   const { appUser } = useAuth();
@@ -36,7 +37,10 @@ export default function Participant() {
       <div className="max-w-2xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Açık Etkinlikler</h1>
-          <SignOutButton />
+          <div className="flex items-center gap-3">
+            <Link href="/profile" className="text-sm text-purple-300 hover:text-purple-100 font-semibold transition">👤 Profilim</Link>
+            <SignOutButton />
+          </div>
         </div>
         {events.length === 0 ? (
           <div className="text-center py-12 bg-gray-800 rounded border border-gray-700">
