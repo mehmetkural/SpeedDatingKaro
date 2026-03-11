@@ -123,6 +123,17 @@ export const listenToMatches = (eventId: string, round: number, callback: (match
   });
 };
 
+export const listenToAllMatches = (eventId: string, callback: (matches: SpeedMatch[]) => void) => {
+  return onSnapshot(collection(db, 'events', eventId, 'matches'), (querySnapshot) => {
+    const matches = querySnapshot.docs.map(doc => ({
+      ...doc.data(),
+      sessionStartedAt: doc.data().sessionStartedAt?.toDate() || null,
+      sessionEndedAt: doc.data().sessionEndedAt?.toDate() || null
+    } as SpeedMatch));
+    callback(matches);
+  });
+};
+
 export const listenToEvent = (eventId: string, callback: (event: Event) => void) => {
   return onSnapshot(doc(db, 'events', eventId), (doc) => {
     if (doc.exists()) {

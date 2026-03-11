@@ -3,7 +3,7 @@
 import { useAuth } from '../../../components/AuthProvider';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { listenToEvent, listenToParticipants, generateMatches, listenToMatches, checkAndAdvanceRound, cancelSession } from '../../../lib/firestore';
+import { listenToEvent, listenToParticipants, generateMatches, listenToMatches, listenToAllMatches, checkAndAdvanceRound, cancelSession } from '../../../lib/firestore';
 import { Event, Participant, SpeedMatch } from '../../../types';
 import SignOutButton from '../../../components/SignOutButton';
 
@@ -14,6 +14,7 @@ export default function ModeratorEventView() {
   const [event, setEvent] = useState<Event | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [matches, setMatches] = useState<SpeedMatch[]>([]);
+  const [allMatches, setAllMatches] = useState<SpeedMatch[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -21,10 +22,12 @@ export default function ModeratorEventView() {
 
     const unsubscribeEvent = listenToEvent(eventId, setEvent);
     const unsubscribeParticipants = listenToParticipants(eventId, setParticipants);
+    const unsubscribeAllMatches = listenToAllMatches(eventId, setAllMatches);
 
     return () => {
       unsubscribeEvent();
       unsubscribeParticipants();
+      unsubscribeAllMatches();
     };
   }, [eventId]);
 
@@ -175,28 +178,40 @@ export default function ModeratorEventView() {
             ))}
           </ul>
 
-          {matches.length > 0 && (
-            <>
-              <h2 className="text-2xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Tur {event.currentRound} Maçları</h2>
-              <ul className="space-y-2">
-                {matches.map(match => (
-                  <li key={match.matchId} className="p-3 bg-gray-800 rounded border border-gray-700 hover:bg-gray-700 transition">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold text-white">Masa {match.tableNumber}</span>
-                      <span className={`px-2 py-1 rounded text-white font-medium ${match.status === 'completed' ? 'bg-green-600' : 'bg-yellow-600'}`}>
-                        {match.status === 'completed' ? 'Tamamlandı' : 'Devam Ediyor'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-400 mt-1">
-                      {match.participant2Uid
-                        ? `${participants.find(p => p.uid === match.participant1Uid)?.displayName ?? match.participant1Uid.slice(0, 8)} ↔ ${participants.find(p => p.uid === match.participant2Uid)?.displayName ?? match.participant2Uid.slice(0, 8)}`
-                        : 'Eşsiz'}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+          {allMatches.length > 0 && (() => {
+            const rounds = Array.from(new Set(allMatches.map(m => m.round))).sort((a, b) => a - b);
+            return rounds.map(round => {
+              const roundMatches = allMatches.filter(m => m.round === round).sort((a, b) => a.tableNumber - b.tableNumber);
+              const allDone = roundMatches.every(m => m.status === 'completed');
+              return (
+                <div key={round} className="mb-6">
+                  <h2 className="text-xl font-bold mb-3 text-white border-b border-gray-700 pb-2 flex items-center gap-3">
+                    Tur {round} Maçları
+                    <span className={`text-sm px-2 py-1 rounded font-medium ${allDone ? 'bg-green-700 text-green-200' : round === event.currentRound ? 'bg-yellow-700 text-yellow-200' : 'bg-gray-700 text-gray-300'}`}>
+                      {allDone ? 'Tamamlandı' : round === event.currentRound ? 'Devam Ediyor' : 'Bekliyor'}
+                    </span>
+                  </h2>
+                  <ul className="space-y-2">
+                    {roundMatches.map(match => (
+                      <li key={match.matchId} className="p-3 bg-gray-800 rounded border border-gray-700">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-white">Masa {match.tableNumber}</span>
+                          <span className={`px-2 py-1 rounded text-white font-medium text-sm ${match.status === 'completed' ? 'bg-green-600' : 'bg-yellow-600'}`}>
+                            {match.status === 'completed' ? 'Tamamlandı' : 'Devam Ediyor'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-400 mt-1">
+                          {match.participant2Uid
+                            ? `${participants.find(p => p.uid === match.participant1Uid)?.displayName ?? match.participant1Uid.slice(0, 8)} ↔ ${participants.find(p => p.uid === match.participant2Uid)?.displayName ?? match.participant2Uid.slice(0, 8)}`
+                            : 'Eşsiz'}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            });
+          })()}
         </>
       )}
       </div>
