@@ -385,6 +385,22 @@ export const getMutualMatches = async (eventId: string, uid: string): Promise<st
   return [...likedUids].filter(u => likedByUids.has(u));
 };
 
+export const pauseSession = async (eventId: string) => {
+  await setDoc(doc(db, 'events', eventId), {
+    paused: true,
+    pausedAt: serverTimestamp(),
+  }, { merge: true });
+};
+
+export const resumeSession = async (eventId: string, pausedAt: Date, accumulatedSeconds: number) => {
+  const secondsPaused = (Date.now() - pausedAt.getTime()) / 1000;
+  await setDoc(doc(db, 'events', eventId), {
+    paused: false,
+    pausedAt: null,
+    pauseAccumulatedSeconds: accumulatedSeconds + secondsPaused,
+  }, { merge: true });
+};
+
 export const cancelSession = async (eventId: string) => {
   const eventRef = doc(db, 'events', eventId);
   await setDoc(eventRef, {

@@ -30,6 +30,9 @@ export interface Event {
   location?: string;
   scheduledAt?: Date | null;
   maxParticipants?: number;
+  paused?: boolean;
+  pausedAt?: Date | null;
+  pauseAccumulatedSeconds?: number;
 }
 
 export interface Participant {

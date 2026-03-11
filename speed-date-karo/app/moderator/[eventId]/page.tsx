@@ -3,7 +3,7 @@
 import { useAuth } from '../../../components/AuthProvider';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { listenToEvent, listenToParticipants, generateMatches, listenToMatches, listenToAllMatches, checkAndAdvanceRound, cancelSession, sendAnnouncement, listenToWaitlist, joinEvent, leaveWaitlist } from '../../../lib/firestore';
+import { listenToEvent, listenToParticipants, generateMatches, listenToMatches, listenToAllMatches, checkAndAdvanceRound, cancelSession, sendAnnouncement, listenToWaitlist, joinEvent, leaveWaitlist, pauseSession, resumeSession } from '../../../lib/firestore';
 import { Event, Participant, SpeedMatch, WaitlistEntry } from '../../../types';
 import SignOutButton from '../../../components/SignOutButton';
 
@@ -94,6 +94,22 @@ export default function ModeratorEventView() {
     setLoading(false);
   };
 
+  const handleTogglePause = async () => {
+    if (!event) return;
+    setLoading(true);
+    try {
+      if (event.paused) {
+        await resumeSession(eventId, event.pausedAt!, event.pauseAccumulatedSeconds || 0);
+      } else {
+        await pauseSession(eventId);
+      }
+    } catch (err) {
+      console.error('Error toggling pause:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAdmitFromWaitlist = async (entry: WaitlistEntry) => {
     try {
       await leaveWaitlist(eventId, entry.uid);
@@ -180,13 +196,26 @@ export default function ModeratorEventView() {
 
           {event.status === 'active' && (
             <div className="space-y-3 mb-6">
-              <button
-                onClick={handleCancelSession}
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white p-3 rounded font-bold hover:from-red-600 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg"
-              >
-                {loading ? 'İptal Ediliyor...' : '✕ Oturumu İptal Et'}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleTogglePause}
+                  disabled={loading}
+                  className={`flex-1 p-3 rounded font-bold transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+                    event.paused
+                      ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
+                      : 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700'
+                  } text-white`}
+                >
+                  {event.paused ? '▶ Devam Et' : '⏸ Duraklat'}
+                </button>
+                <button
+                  onClick={handleCancelSession}
+                  disabled={loading}
+                  className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white p-3 rounded font-bold hover:from-red-600 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg"
+                >
+                  ✕ İptal Et
+                </button>
+              </div>
               <form onSubmit={handleSendAnnouncement} className="flex gap-2">
                 <input
                   type="text"

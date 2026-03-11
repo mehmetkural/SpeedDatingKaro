@@ -232,10 +232,12 @@ export default function EventLobby() {
 
           {/* Timer */}
           <div className="mb-6">
-            <CountdownTimer 
+            <CountdownTimer
               sessionStartedAt={currentMatch.sessionStartedAt}
               sessionDurationSeconds={event.sessionDurationSeconds}
               onTimeUp={handleTimeUp}
+              paused={event.paused}
+              pauseAccumulatedSeconds={event.pauseAccumulatedSeconds}
             />
           </div>
 
