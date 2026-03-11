@@ -7,6 +7,7 @@ import { Event } from '../../types';
 import SignOutButton from '../../components/SignOutButton';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { SkeletonEventList } from '../../components/Skeleton';
 
 export default function Participant() {
   const { appUser } = useAuth();
@@ -35,7 +36,17 @@ export default function Participant() {
     window.location.href = `/participant/${eventId}`;
   };
 
-  if (loading) return <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white text-lg">Yükleniyor...</div>;
+  if (loading) return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <div className="h-8 w-48 bg-gray-700 rounded animate-pulse" />
+          <div className="h-8 w-20 bg-gray-700 rounded animate-pulse" />
+        </div>
+        <SkeletonEventList />
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">

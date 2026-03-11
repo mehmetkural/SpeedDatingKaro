@@ -6,14 +6,16 @@ import { getMyEvents, deleteEvent } from '../../lib/firestore';
 import { Event } from '../../types';
 import Link from 'next/link';
 import SignOutButton from '../../components/SignOutButton';
+import { SkeletonEventList } from '../../components/Skeleton';
 
 export default function Moderator() {
   const { appUser } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (appUser?.role === 'moderator') {
-      getMyEvents(appUser.uid).then(setEvents);
+      getMyEvents(appUser.uid).then(setEvents).finally(() => setLoading(false));
     }
   }, [appUser]);
 
@@ -26,6 +28,18 @@ export default function Moderator() {
     }
   };
 
+  if (loading) return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <div className="h-8 w-48 bg-gray-700 rounded animate-pulse" />
+          <div className="h-8 w-20 bg-gray-700 rounded animate-pulse" />
+        </div>
+        <SkeletonEventList />
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
       <div className="max-w-4xl mx-auto">
@@ -34,7 +48,7 @@ export default function Moderator() {
           <SignOutButton />
         </div>
         <Link href="/moderator/create" className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 mb-6 inline-block rounded hover:from-green-600 hover:to-green-700 transition font-semibold shadow-lg">+ Etkinlik Oluştur</Link>
-        
+
         {events.length === 0 ? (
           <div className="text-center py-12 bg-gray-800 rounded border border-gray-700">
             <p className="text-gray-400 text-lg">Henüz etkinlik yok. Yeni bir etkinlik oluşturun!</p>

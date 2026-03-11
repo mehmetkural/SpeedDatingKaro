@@ -8,6 +8,7 @@ import { useParams } from 'next/navigation';
 import SignOutButton from '../../../components/SignOutButton';
 import CountdownTimer from '../../../components/CountdownTimer';
 import toast from 'react-hot-toast';
+import { SkeletonStatGrid } from '../../../components/Skeleton';
 
 export default function EventLobby() {
   const { appUser } = useAuth();
@@ -137,7 +138,17 @@ export default function EventLobby() {
     }
   };
 
-  if (!event) return <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white text-lg">Yükleniyor...</div>;
+  if (!event) return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <div className="h-8 w-48 bg-gray-700 rounded animate-pulse" />
+          <div className="h-8 w-20 bg-gray-700 rounded animate-pulse" />
+        </div>
+        <SkeletonStatGrid />
+      </div>
+    </div>
+  );
 
   // Rating overlay — shown when last match completed but not yet rated
   const showRatingOverlay = lastCompletedMatch && !ratedMatchIds.has(lastCompletedMatch.matchId);

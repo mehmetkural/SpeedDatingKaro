@@ -7,6 +7,7 @@ import { listenToEvent, listenToParticipants, generateMatches, listenToMatches, 
 import { Event, Participant, SpeedMatch, WaitlistEntry } from '../../../types';
 import SignOutButton from '../../../components/SignOutButton';
 import toast from 'react-hot-toast';
+import { SkeletonStatGrid } from '../../../components/Skeleton';
 
 export default function ModeratorEventView() {
   const { appUser } = useAuth();
@@ -64,7 +65,17 @@ export default function ModeratorEventView() {
     }
   }, [matches, event?.status, eventId, event?.currentRound]);
 
-  if (!event) return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+  if (!event) return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <div className="h-8 w-56 bg-gray-700 rounded animate-pulse" />
+          <div className="h-8 w-20 bg-gray-700 rounded animate-pulse" />
+        </div>
+        <SkeletonStatGrid />
+      </div>
+    </div>
+  );
 
   const handleStartSession = async () => {
     if (participants.length < 2) {
