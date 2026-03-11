@@ -3,7 +3,9 @@ import { collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, setDoc,
 import { Event, Participant, SpeedMatch, AppUser } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
-// Matching Algorithm
+// Matching Algorithm — round-robin circle method
+// Even n: n-1 rounds, n/2 matches per round (everyone plays everyone)
+// Odd n:  n rounds,   (n-1)/2 matches per round (one bye per round)
 export const generateMatches = async (eventId: string, tableCount: number): Promise<{ allPaired: boolean }> => {
   const event = await getEvent(eventId);
   if (!event) throw new Error('Event not found');
@@ -11,86 +13,71 @@ export const generateMatches = async (eventId: string, tableCount: number): Prom
   const participants = await getEventParticipants(eventId);
   if (participants.length < 2) throw new Error('At least 2 participants required');
 
-  const pastMatches = await getPastMatches(eventId);
-  const pastPairSet = new Set(pastMatches.map(m => {
-    const [uid1, uid2] = [m.participant1Uid, m.participant2Uid].sort();
-    return `${uid1}_${uid2}`;
-  }));
+  const n = participants.length;
+  const roundNumber = event.currentRound + 1;
 
-  const shuffled = [...participants].sort(() => Math.random() - 0.5);
-  const matches: SpeedMatch[] = [];
-  const matched = new Set<string>();
-  let tableNumber = 1;
+  // Add a null "bye" slot for odd counts so the list length is always even
+  const list: (Participant | null)[] = n % 2 === 0
+    ? [...participants]
+    : [...participants, null];
+  const m = list.length;           // always even
+  const totalRounds = m - 1;       // n-1 for even, n for odd
 
-  for (let i = 0; i < shuffled.length; i++) {
-    if (matched.has(shuffled[i].uid)) continue;
+  // Fix list[0], rotate list[1..m-1] one step per round
+  const fixed = list[0];
+  const rotating = list.slice(1);  // length = m-1
+  const rotLen = rotating.length;
+  const roundIndex = (roundNumber - 1) % totalRounds;
 
-    let partner: Participant | null = null;
-    for (let j = i + 1; j < shuffled.length; j++) {
-      if (matched.has(shuffled[j].uid)) continue;
+  const rotated = [
+    ...rotating.slice(roundIndex),
+    ...rotating.slice(0, roundIndex),
+  ];
 
-      const [uid1, uid2] = [shuffled[i].uid, shuffled[j].uid].sort();
-      const pairKey = `${uid1}_${uid2}`;
+  // Pairs: fixed ↔ rotated[last], then rotated[i] ↔ rotated[rotLen-2-i]
+  const pairs: [Participant, Participant][] = [];
 
-      if (!pastPairSet.has(pairKey)) {
-        partner = shuffled[j];
-        break;
-      }
-    }
-
-    if (partner) {
-      matched.add(shuffled[i].uid);
-      matched.add(partner.uid);
-
-      matches.push({
-        matchId: uuidv4(),
-        round: event.currentRound + 1,
-        tableNumber: tableNumber % tableCount + 1,
-        participant1Uid: shuffled[i].uid,
-        participant2Uid: partner.uid,
-        participant1Ready: false,
-        participant2Ready: false,
-        sessionStartedAt: null,
-        sessionEndedAt: null,
-        status: 'in_progress'
-      });
-
-      tableNumber++;
-    }
+  if (fixed && rotated[rotLen - 1]) {
+    pairs.push([fixed as Participant, rotated[rotLen - 1] as Participant]);
+  }
+  for (let i = 0; i < Math.floor(rotLen / 2); i++) {
+    const pa = rotated[i];
+    const pb = rotated[rotLen - 2 - i];
+    if (pa && pb) pairs.push([pa as Participant, pb as Participant]);
   }
 
+  const matches: SpeedMatch[] = pairs.map(([p1, p2], idx) => ({
+    matchId: uuidv4(),
+    round: roundNumber,
+    tableNumber: (idx % tableCount) + 1,
+    participant1Uid: p1.uid,
+    participant2Uid: p2.uid,
+    participant1Ready: false,
+    participant2Ready: false,
+    sessionStartedAt: null,
+    sessionEndedAt: null,
+    status: 'in_progress',
+  }));
+
   const batch = writeBatch(db);
-  
-  // Write all matches
+
   matches.forEach(match => {
     const docRef = doc(db, 'events', eventId, 'matches', match.matchId);
-    const { sessionStartedAt, ...matchWithoutTimestamp } = match;
-    const matchData = {
-      ...matchWithoutTimestamp,
-      sessionStartedAt: null  // Timer starts when BOTH participants are ready
-    };
-    batch.set(docRef, matchData as any);
+    const { sessionStartedAt, sessionEndedAt, ...rest } = match;
+    batch.set(docRef, { ...rest, sessionStartedAt: null, sessionEndedAt: null } as any);
   });
 
-  // Update event status and round with sessionStartedAt
   const eventRef = doc(db, 'events', eventId);
-  
-  // Calculate total rounds if not set (n participants = max n-1 rounds)
-  const totalRounds = event.totalRounds || Math.max(participants.length - 1, 1);
-  
   batch.update(eventRef, {
     status: 'active',
-    currentRound: event.currentRound + 1,
-    totalRounds: totalRounds,
-    sessionStartedAt: serverTimestamp()
+    currentRound: roundNumber,
+    totalRounds,
+    sessionStartedAt: serverTimestamp(),
   });
 
   await batch.commit();
-  
-  const totalPossiblePairs = participants.length * (participants.length - 1) / 2;
-  const allPaired = pastPairSet.size + matches.filter(m => m.participant2Uid).length >= totalPossiblePairs;
 
-  return { allPaired };
+  return { allPaired: roundNumber >= totalRounds };
 };
 
 // Common
