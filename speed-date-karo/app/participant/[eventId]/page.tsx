@@ -2,7 +2,7 @@
 
 import { useAuth } from '../../../components/AuthProvider';
 import { useEffect, useState } from 'react';
-import { listenToEvent, listenToParticipants, listenToMatches, markMatchParticipantReady, completeMatch } from '../../../lib/firestore';
+import { listenToEvent, listenToParticipants, listenToMatches, markMatchParticipantReady, completeMatch, submitRating, getMutualMatches } from '../../../lib/firestore';
 import { Event, Participant, SpeedMatch } from '../../../types';
 import { useParams } from 'next/navigation';
 import SignOutButton from '../../../components/SignOutButton';
@@ -18,6 +18,9 @@ export default function EventLobby() {
   const [matches, setMatches] = useState<SpeedMatch[]>([]);
   const [isReadyLoading, setIsReadyLoading] = useState(false);
   const [userReady, setUserReady] = useState(false);
+  const [lastCompletedMatch, setLastCompletedMatch] = useState<SpeedMatch | null>(null);
+  const [ratedMatchIds, setRatedMatchIds] = useState<Set<string>>(new Set());
+  const [mutualMatches, setMutualMatches] = useState<string[]>([]);
 
   useEffect(() => {
     if (!eventId) return;
@@ -61,6 +64,39 @@ export default function EventLobby() {
     return () => unsubscribeMatches();
   }, [eventId, event, appUser]);
 
+  // Track last completed match for rating overlay
+  useEffect(() => {
+    if (currentMatch?.status === 'completed') {
+      setLastCompletedMatch(currentMatch);
+    }
+  }, [currentMatch?.status, currentMatch?.matchId]);
+
+  // Load mutual matches when event completes
+  useEffect(() => {
+    if (event?.status === 'completed' && appUser) {
+      getMutualMatches(eventId, appUser.uid).then(setMutualMatches);
+    }
+  }, [event?.status, eventId, appUser]);
+
+  const handleRate = async (liked: boolean) => {
+    if (!lastCompletedMatch || !appUser) return;
+    const partnerUid = lastCompletedMatch.participant1Uid === appUser.uid
+      ? lastCompletedMatch.participant2Uid
+      : lastCompletedMatch.participant1Uid;
+    try {
+      await submitRating(eventId, {
+        matchId: lastCompletedMatch.matchId,
+        fromUid: appUser.uid,
+        toUid: partnerUid,
+        round: lastCompletedMatch.round,
+        liked,
+      });
+      setRatedMatchIds(prev => new Set([...prev, lastCompletedMatch.matchId]));
+    } catch (err) {
+      console.error('Error submitting rating:', err);
+    }
+  };
+
   const handleMarkReady = async () => {
     if (!currentMatch || !appUser) return;
     setIsReadyLoading(true);
@@ -85,6 +121,46 @@ export default function EventLobby() {
   };
 
   if (!event) return <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white text-lg">Yükleniyor...</div>;
+
+  // Rating overlay — shown when last match completed but not yet rated
+  const showRatingOverlay = lastCompletedMatch && !ratedMatchIds.has(lastCompletedMatch.matchId);
+  const ratingPartnerName = lastCompletedMatch
+    ? participants.find(p => p.uid === (lastCompletedMatch.participant1Uid === appUser?.uid ? lastCompletedMatch.participant2Uid : lastCompletedMatch.participant1Uid))?.displayName || 'Eşiniz'
+    : '';
+
+  if (showRatingOverlay) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="p-8 bg-gradient-to-br from-purple-900 to-purple-800 rounded-xl border-2 border-purple-500 shadow-xl">
+            <p className="text-4xl mb-4">💫</p>
+            <h2 className="text-2xl font-bold text-white mb-2">Tur {lastCompletedMatch.round} Tamamlandı!</h2>
+            <p className="text-purple-200 text-lg mb-6"><span className="font-bold text-white">{ratingPartnerName}</span> ile geçen dakikalar nasıldı?</p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => handleRate(true)}
+                className="flex-1 py-4 text-2xl bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl font-bold hover:from-pink-600 hover:to-rose-600 transition shadow-lg"
+              >
+                ❤️ Beğendim
+              </button>
+              <button
+                onClick={() => handleRate(false)}
+                className="flex-1 py-4 text-2xl bg-gradient-to-r from-gray-600 to-gray-700 rounded-xl font-bold hover:from-gray-700 hover:to-gray-800 transition shadow-lg"
+              >
+                👋 Geçtim
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={() => setRatedMatchIds(prev => new Set([...prev, lastCompletedMatch.matchId]))}
+            className="text-gray-400 hover:text-gray-200 text-sm underline transition"
+          >
+            Atla
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Match view when session is active
   if (event.status === 'active' && currentMatch) {
@@ -230,7 +306,27 @@ export default function EventLobby() {
           <div className="space-y-4 text-center">
             <div className="p-6 bg-gradient-to-r from-green-600 to-green-500 rounded border border-green-400 shadow-lg">
               <p className="text-white font-bold text-2xl">✨ Etkinlik Tamamlandı!</p>
-              <p className="text-white text-lg mt-2">Herkes ile tanıştınız. Harika geçti!</p>              <p className="text-white text-md mt-2">Katılımınız için çok teşekkürler!</p>            </div>
+              <p className="text-white text-lg mt-2">Herkes ile tanıştınız. Harika geçti!</p>
+              <p className="text-white text-md mt-2">Katılımınız için çok teşekkürler!</p>
+            </div>
+
+            {mutualMatches.length > 0 && (
+              <div className="p-6 bg-gradient-to-br from-pink-900 to-rose-900 rounded border-2 border-pink-500 shadow-lg">
+                <p className="text-2xl font-bold text-white mb-1">💞 Karşılıklı Eşleşmeler!</p>
+                <p className="text-pink-200 text-sm mb-4">Bu kişiler de sizi beğendi:</p>
+                <ul className="space-y-2">
+                  {mutualMatches.map(uid => {
+                    const name = participants.find(p => p.uid === uid)?.displayName || uid.slice(0, 8);
+                    return (
+                      <li key={uid} className="py-2 px-4 bg-pink-800/50 rounded-lg font-bold text-white">
+                        ❤️ {name}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
             <a
               href="/participant"
               className="block w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded font-bold hover:from-blue-600 hover:to-blue-700 transition shadow-lg"

@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, setDoc, onSnapshot, query, where, orderBy, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { Event, Participant, SpeedMatch, AppUser } from '../types';
+import { Event, Participant, SpeedMatch, AppUser, MatchRating } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 // Matching Algorithm — round-robin circle method
@@ -300,6 +300,29 @@ export const checkAndAdvanceRound = async (eventId: string, round: number) => {
     // Start next round
     await generateMatches(eventId, event.tableCount);
   }
+};
+
+// Ratings
+export const submitRating = async (
+  eventId: string,
+  rating: Omit<MatchRating, 'ratingId' | 'createdAt'>
+) => {
+  const ratingId = `${rating.fromUid}_${rating.matchId}`;
+  await setDoc(doc(db, 'events', eventId, 'ratings', ratingId), {
+    ...rating,
+    ratingId,
+    createdAt: serverTimestamp(),
+  });
+};
+
+export const getMutualMatches = async (eventId: string, uid: string): Promise<string[]> => {
+  const [myLikesSnap, theirLikesSnap] = await Promise.all([
+    getDocs(query(collection(db, 'events', eventId, 'ratings'), where('fromUid', '==', uid), where('liked', '==', true))),
+    getDocs(query(collection(db, 'events', eventId, 'ratings'), where('toUid', '==', uid), where('liked', '==', true))),
+  ]);
+  const likedUids = new Set(myLikesSnap.docs.map(d => d.data().toUid as string));
+  const likedByUids = new Set(theirLikesSnap.docs.map(d => d.data().fromUid as string));
+  return [...likedUids].filter(u => likedByUids.has(u));
 };
 
 export const cancelSession = async (eventId: string) => {

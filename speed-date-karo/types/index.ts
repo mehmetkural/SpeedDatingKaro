@@ -39,3 +39,13 @@ export interface SpeedMatch {
   sessionEndedAt: Date | null;
   status: "pending" | "in_progress" | "completed";
 }
+
+export interface MatchRating {
+  ratingId: string;
+  matchId: string;
+  fromUid: string;
+  toUid: string;
+  round: number;
+  liked: boolean;
+  createdAt: Date;
+}
