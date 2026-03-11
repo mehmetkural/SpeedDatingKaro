@@ -3,8 +3,8 @@
 import { useAuth } from '../../../components/AuthProvider';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { listenToEvent, listenToParticipants, generateMatches, listenToMatches, listenToAllMatches, checkAndAdvanceRound, cancelSession, sendAnnouncement } from '../../../lib/firestore';
-import { Event, Participant, SpeedMatch } from '../../../types';
+import { listenToEvent, listenToParticipants, generateMatches, listenToMatches, listenToAllMatches, checkAndAdvanceRound, cancelSession, sendAnnouncement, listenToWaitlist, joinEvent, leaveWaitlist } from '../../../lib/firestore';
+import { Event, Participant, SpeedMatch, WaitlistEntry } from '../../../types';
 import SignOutButton from '../../../components/SignOutButton';
 
 export default function ModeratorEventView() {
@@ -18,6 +18,7 @@ export default function ModeratorEventView() {
   const [loading, setLoading] = useState(false);
   const [announcementText, setAnnouncementText] = useState('');
   const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
+  const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
 
   useEffect(() => {
     if (!eventId) return;
@@ -25,11 +26,13 @@ export default function ModeratorEventView() {
     const unsubscribeEvent = listenToEvent(eventId, setEvent);
     const unsubscribeParticipants = listenToParticipants(eventId, setParticipants);
     const unsubscribeAllMatches = listenToAllMatches(eventId, setAllMatches);
+    const unsubscribeWaitlist = listenToWaitlist(eventId, setWaitlist);
 
     return () => {
       unsubscribeEvent();
       unsubscribeParticipants();
       unsubscribeAllMatches();
+      unsubscribeWaitlist();
     };
   }, [eventId]);
 
@@ -89,6 +92,15 @@ export default function ModeratorEventView() {
       alert(`Hata: ${err instanceof Error ? err.message : 'Bilinmeyen hata'}`);
     }
     setLoading(false);
+  };
+
+  const handleAdmitFromWaitlist = async (entry: WaitlistEntry) => {
+    try {
+      await leaveWaitlist(eventId, entry.uid);
+      await joinEvent(eventId, { uid: entry.uid, displayName: entry.displayName, isReady: false });
+    } catch (err) {
+      console.error('Error admitting from waitlist:', err);
+    }
   };
 
   const handleSendAnnouncement = async (e: React.FormEvent) => {
@@ -210,6 +222,29 @@ export default function ModeratorEventView() {
               </li>
             ))}
           </ul>
+
+          {waitlist.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-xl font-bold mb-3 text-white border-b border-gray-700 pb-2">
+                Bekleme Listesi ({waitlist.length})
+              </h2>
+              <ul className="space-y-2">
+                {waitlist.map(entry => (
+                  <li key={entry.uid} className="flex items-center p-3 bg-gray-800 rounded border border-orange-700 hover:bg-gray-700 transition">
+                    <span className="flex-1 font-semibold text-white">{entry.displayName}</span>
+                    {event.status === 'waiting' && (
+                      <button
+                        onClick={() => handleAdmitFromWaitlist(entry)}
+                        className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition font-semibold"
+                      >
+                        Kabul Et
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {allMatches.length > 0 && (() => {
             const rounds = Array.from(new Set(allMatches.map(m => m.round))).sort((a, b) => a - b);

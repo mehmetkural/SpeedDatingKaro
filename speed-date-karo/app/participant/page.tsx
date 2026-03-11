@@ -22,11 +22,15 @@ export default function Participant() {
 
   const handleJoin = async (eventId: string) => {
     if (!appUser) return;
-    await joinEvent(eventId, {
+    const { waitlisted } = await joinEvent(eventId, {
       uid: appUser.uid,
       displayName: appUser.displayName,
-      isReady: false
+      isReady: false,
     });
+    if (waitlisted) {
+      alert('Etkinlik dolu. Bekleme listesine alındınız, yer açıldığında bildirim yapılacak.');
+      return;
+    }
     window.location.href = `/participant/${eventId}`;
   };
 

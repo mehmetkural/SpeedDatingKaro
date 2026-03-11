@@ -8,6 +8,12 @@ export interface AppUser {
   interests?: string;
 }
 
+export interface WaitlistEntry {
+  uid: string;
+  displayName: string;
+  joinedAt: Date;
+}
+
 export interface Event {
   eventId: string;
   title: string;
@@ -23,6 +29,7 @@ export interface Event {
   description?: string;
   location?: string;
   scheduledAt?: Date | null;
+  maxParticipants?: number;
 }
 
 export interface Participant {

@@ -16,6 +16,7 @@ export default function CreateEvent() {
   const [scheduledAt, setScheduledAt] = useState('');
   const [tableCount, setTableCount] = useState(2);
   const [duration, setDuration] = useState(5);
+  const [maxParticipants, setMaxParticipants] = useState('');
   const [loading, setLoading] = useState(false);
 
   if (appUser?.role !== 'moderator') return <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white text-lg">Erişim Reddedildi</div>;
@@ -29,6 +30,7 @@ export default function CreateEvent() {
         description: description || undefined,
         location: location || undefined,
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+        maxParticipants: maxParticipants ? parseInt(maxParticipants) : undefined,
         createdBy: appUser.uid,
         tableCount,
         sessionDurationSeconds: duration * 60,
@@ -99,6 +101,20 @@ export default function CreateEvent() {
               onChange={e => setScheduledAt(e.target.value)}
               className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold mb-2 text-gray-300">Maksimum Katılımcı <span className="text-gray-500">(isteğe bağlı)</span></label>
+            <input
+              type="number"
+              min="2"
+              max="100"
+              value={maxParticipants}
+              onChange={e => setMaxParticipants(e.target.value)}
+              className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              placeholder="Sınırsız"
+            />
+            <p className="text-xs text-gray-500 mt-1">Dolarsa diğerleri bekleme listesine alınır</p>
           </div>
 
           <div>

@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, setDoc, onSnapshot, query, where, orderBy, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { Event, Participant, SpeedMatch, AppUser, MatchRating, Announcement } from '../types';
+import { Event, Participant, SpeedMatch, AppUser, MatchRating, Announcement, WaitlistEntry } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 // Matching Algorithm — round-robin circle method
@@ -205,11 +205,23 @@ export const getOpenEvents = async (): Promise<Event[]> => {
   return querySnapshot.docs.map(d => mapEvent(d.id, d.data()));
 };
 
-export const joinEvent = async (eventId: string, participant: Omit<Participant, 'joinedAt'>) => {
+export const joinEvent = async (eventId: string, participant: Omit<Participant, 'joinedAt'>): Promise<{ waitlisted: boolean }> => {
+  const event = await getEvent(eventId);
+  if (!event) throw new Error('Event not found');
+
+  if (event.maxParticipants) {
+    const existingSnap = await getDocs(collection(db, 'events', eventId, 'participants'));
+    if (existingSnap.size >= event.maxParticipants) {
+      await joinWaitlist(eventId, { uid: participant.uid, displayName: participant.displayName });
+      return { waitlisted: true };
+    }
+  }
+
   await setDoc(doc(db, 'events', eventId, 'participants', participant.uid), {
     ...participant,
-    joinedAt: serverTimestamp()
+    joinedAt: serverTimestamp(),
   });
+  return { waitlisted: false };
 };
 
 // Update participant ready status
@@ -292,6 +304,29 @@ export const checkAndAdvanceRound = async (eventId: string, round: number) => {
     // Start next round
     await generateMatches(eventId, event.tableCount);
   }
+};
+
+// Waitlist
+export const joinWaitlist = async (eventId: string, entry: Omit<WaitlistEntry, 'joinedAt'>) => {
+  await setDoc(doc(db, 'events', eventId, 'waitlist', entry.uid), {
+    ...entry,
+    joinedAt: serverTimestamp(),
+  });
+};
+
+export const leaveWaitlist = async (eventId: string, uid: string) => {
+  await deleteDoc(doc(db, 'events', eventId, 'waitlist', uid));
+};
+
+export const listenToWaitlist = (eventId: string, callback: (entries: WaitlistEntry[]) => void) => {
+  const q = query(collection(db, 'events', eventId, 'waitlist'), orderBy('joinedAt', 'asc'));
+  return onSnapshot(q, snap => {
+    callback(snap.docs.map(d => ({
+      uid: d.data().uid as string,
+      displayName: d.data().displayName as string,
+      joinedAt: d.data().joinedAt?.toDate() || new Date(),
+    })));
+  });
 };
 
 // Announcements
