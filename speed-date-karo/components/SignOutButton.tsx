@@ -3,7 +3,7 @@
 import { logout } from '../lib/auth';
 import { useRouter } from 'next/navigation';
 
-export default function SignOut() {
+export default function SignOutButton() {
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -14,9 +14,9 @@ export default function SignOut() {
   return (
     <button
       onClick={handleSignOut}
-      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+      className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
     >
-      Sign Out
+      Çıkış
     </button>
   );
 }

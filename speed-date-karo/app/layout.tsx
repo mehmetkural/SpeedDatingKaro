@@ -34,7 +34,15 @@ export default function RootLayout({
           <Toaster
             position="top-center"
             toastOptions={{
-              style: { background: '#1f2937', color: '#fff', border: '1px solid #374151' },
+              style: {
+                background: '#ffffff',
+                color: '#0f172a',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+                fontSize: '14px',
+                fontWeight: '500',
+              },
               success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } },
               error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
             }}

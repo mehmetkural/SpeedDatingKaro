@@ -26,20 +26,15 @@ export default function CountdownTimer({
 
   useEffect(() => {
     if (!startTimestamp) return;
-
-    // Reset fired flag when a new session starts
     firedRef.current = false;
 
     const interval = setInterval(() => {
       if (paused) return;
-
       const now = Date.now();
       const effectiveDuration = sessionDurationSeconds - pauseAccumulatedSeconds;
       const endTime = startTimestamp + effectiveDuration * 1000;
       const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
-
       setRemainingSeconds(remaining);
-
       if (remaining === 0 && !firedRef.current) {
         firedRef.current = true;
         onTimeUpRef.current?.();
@@ -52,19 +47,46 @@ export default function CountdownTimer({
   const minutes = Math.floor(remainingSeconds / 60);
   const seconds = remainingSeconds % 60;
   const isTimeUp = remainingSeconds === 0 && !!startTimestamp;
-  const isLowTime = remainingSeconds < 60 && !paused && !isTimeUp;
+  const isLowTime = remainingSeconds <= 30 && remainingSeconds > 0 && !paused;
+  const progress = startTimestamp
+    ? Math.max(0, remainingSeconds / (sessionDurationSeconds - pauseAccumulatedSeconds))
+    : 1;
 
   return (
-    <div className={`text-center p-6 rounded-lg border-2 font-bold text-4xl font-mono ${
+    <div className={`rounded-2xl border-2 p-5 text-center transition-colors ${
       paused
-        ? 'bg-gradient-to-r from-yellow-900 to-yellow-800 border-yellow-500 text-yellow-300'
-        : isLowTime
-          ? 'bg-gradient-to-r from-red-900 to-red-800 border-red-500 text-red-300'
-          : 'bg-gradient-to-r from-blue-900 to-blue-800 border-blue-500 text-blue-200'
+        ? 'bg-amber-50 border-amber-200'
+        : isTimeUp
+          ? 'bg-red-50 border-red-200'
+          : isLowTime
+            ? 'bg-orange-50 border-orange-200'
+            : 'bg-blue-50 border-blue-200'
     }`}>
-      {paused ? '⏸' : '⏱️'} {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
-      {paused && <p className="text-sm mt-2 text-yellow-200 font-semibold">Moderatör duraklattı</p>}
-      {isTimeUp && !paused && <p className="text-sm mt-2 text-yellow-300">⏰ Zaman Bitti!</p>}
+      {/* Progress bar */}
+      <div className="w-full h-1.5 bg-slate-200 rounded-full mb-4 overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-1000 ${
+            paused ? 'bg-amber-400' : isLowTime ? 'bg-orange-500' : 'bg-blue-500'
+          }`}
+          style={{ width: `${progress * 100}%` }}
+        />
+      </div>
+
+      <div className={`text-5xl font-bold font-mono tabular-nums ${
+        paused ? 'text-amber-600' : isTimeUp ? 'text-red-600' : isLowTime ? 'text-orange-600' : 'text-blue-700'
+      }`}>
+        {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+      </div>
+
+      {paused && (
+        <p className="text-sm mt-2 text-amber-600 font-semibold">⏸ Moderatör duraklattı</p>
+      )}
+      {isTimeUp && !paused && (
+        <p className="text-sm mt-2 text-red-600 font-semibold">Süre doldu!</p>
+      )}
+      {!startTimestamp && (
+        <p className="text-sm mt-2 text-slate-400">Her iki taraf hazır olunca başlar</p>
+      )}
     </div>
   );
 }
