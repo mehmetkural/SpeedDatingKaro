@@ -2,6 +2,7 @@
 
 import { useAuth } from '../../../components/AuthProvider';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { listenToEvent, listenToParticipants, generateMatches, listenToMatches, listenToAllMatches, checkAndAdvanceRound, cancelSession, sendAnnouncement, listenToWaitlist, joinEvent, leaveWaitlist, pauseSession, resumeSession } from '../../../lib/firestore';
 import { Event, Participant, SpeedMatch, WaitlistEntry } from '../../../types';
@@ -10,7 +11,7 @@ import toast from 'react-hot-toast';
 import { SkeletonStatGrid } from '../../../components/Skeleton';
 
 export default function ModeratorEventView() {
-  const { appUser } = useAuth();
+  useAuth();
   const params = useParams();
   const eventId = params.eventId as string;
   const [event, setEvent] = useState<Event | null>(null);
@@ -43,6 +44,8 @@ export default function ModeratorEventView() {
 
     const unsubscribeMatches = listenToMatches(eventId, event.currentRound, setMatches);
     return () => unsubscribeMatches();
+    // event object intentionally omitted — only currentRound matters here
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, event?.currentRound]);
 
   // Auto-advance round when all matches completed
@@ -52,10 +55,7 @@ export default function ModeratorEventView() {
     const completedMatches = matches.filter(m => m.status === 'completed').length;
     const totalMatches = matches.length;
 
-    // Check if all matches are completed
     if (completedMatches > 0 && completedMatches === totalMatches) {
-      console.log(`✓ All ${totalMatches} matches completed! Auto-advancing...`);
-      // Wait a moment before advancing (for UI update)
       const timer = setTimeout(() => {
         checkAndAdvanceRound(eventId, event.currentRound).catch(err =>
           console.error('Error advancing round:', err)
@@ -63,6 +63,8 @@ export default function ModeratorEventView() {
       }, 1000);
       return () => clearTimeout(timer);
     }
+    // event object intentionally omitted to avoid double-firing
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matches, event?.status, eventId, event?.currentRound]);
 
   if (!event) return (
@@ -186,12 +188,12 @@ export default function ModeratorEventView() {
             <p className="text-white font-bold text-3xl">✨ Etkinlik Başarıyla Tamamlandı!</p>
             <p className="text-white text-lg mt-2">{participants.length} katılımcı, {event.currentRound} tur</p>
           </div>
-          <a
+          <Link
             href="/moderator"
-            className="block w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded font-bold hover:from-blue-600 hover:to-blue-700 transition shadow-lg"
+            className="block w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded font-bold hover:from-blue-600 hover:to-blue-700 transition shadow-lg text-center"
           >
             ← Etkinliklere Dön
-          </a>
+          </Link>
         </div>
       )}
 

@@ -18,18 +18,16 @@ export default function CountdownTimer({
   pauseAccumulatedSeconds = 0,
 }: CountdownTimerProps) {
   const [remainingSeconds, setRemainingSeconds] = useState(sessionDurationSeconds);
-  const [isTimeUp, setIsTimeUp] = useState(false);
   const firedRef = useRef(false);
   const onTimeUpRef = useRef(onTimeUp);
   useEffect(() => { onTimeUpRef.current = onTimeUp; }, [onTimeUp]);
 
-  // Use numeric timestamp so a new Date object with the same value doesn't restart the effect
   const startTimestamp = sessionStartedAt ? sessionStartedAt.getTime() : null;
 
   useEffect(() => {
     if (!startTimestamp) return;
 
-    setIsTimeUp(false);
+    // Reset fired flag when a new session starts
     firedRef.current = false;
 
     const interval = setInterval(() => {
@@ -44,7 +42,6 @@ export default function CountdownTimer({
 
       if (remaining === 0 && !firedRef.current) {
         firedRef.current = true;
-        setIsTimeUp(true);
         onTimeUpRef.current?.();
       }
     }, 100);
@@ -54,7 +51,8 @@ export default function CountdownTimer({
 
   const minutes = Math.floor(remainingSeconds / 60);
   const seconds = remainingSeconds % 60;
-  const isLowTime = remainingSeconds < 60 && !paused;
+  const isTimeUp = remainingSeconds === 0 && !!startTimestamp;
+  const isLowTime = remainingSeconds < 60 && !paused && !isTimeUp;
 
   return (
     <div className={`text-center p-6 rounded-lg border-2 font-bold text-4xl font-mono ${

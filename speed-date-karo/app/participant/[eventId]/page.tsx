@@ -9,6 +9,7 @@ import SignOutButton from '../../../components/SignOutButton';
 import CountdownTimer from '../../../components/CountdownTimer';
 import toast from 'react-hot-toast';
 import { SkeletonStatGrid } from '../../../components/Skeleton';
+import Link from 'next/link';
 
 export default function EventLobby() {
   const { appUser } = useAuth();
@@ -79,6 +80,8 @@ export default function EventLobby() {
       ? currentMatch.participant2Uid
       : currentMatch.participant1Uid;
     getUserProfile(partnerUid).then(setPartnerProfile);
+    // currentMatch object intentionally omitted — only matchId matters
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMatch?.matchId, appUser]);
 
   // Track last completed match for rating overlay
@@ -86,6 +89,8 @@ export default function EventLobby() {
     if (currentMatch?.status === 'completed') {
       setLastCompletedMatch(currentMatch);
     }
+    // currentMatch object intentionally omitted to avoid re-triggering on every field update
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMatch?.status, currentMatch?.matchId]);
 
   // Load mutual matches and history when event completes
@@ -430,12 +435,12 @@ export default function EventLobby() {
               </div>
             )}
 
-            <a
+            <Link
               href="/participant"
-              className="block w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded font-bold hover:from-blue-600 hover:to-blue-700 transition shadow-lg"
+              className="block w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded font-bold hover:from-blue-600 hover:to-blue-700 transition shadow-lg text-center"
             >
               ← Ana Menüye Dön
-            </a>
+            </Link>
           </div>
         )}
       </div>

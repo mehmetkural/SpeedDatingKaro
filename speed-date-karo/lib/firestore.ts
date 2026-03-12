@@ -63,7 +63,8 @@ export const generateMatches = async (eventId: string, tableCount: number): Prom
 
   matches.forEach(match => {
     const docRef = doc(db, 'events', eventId, 'matches', match.matchId);
-    const { sessionStartedAt, sessionEndedAt, ...rest } = match;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { sessionStartedAt: _s, sessionEndedAt: _e, ...rest } = match;
     batch.set(docRef, { ...rest, sessionStartedAt: null, sessionEndedAt: null });
   });
 

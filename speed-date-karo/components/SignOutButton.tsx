@@ -1,6 +1,5 @@
 'use client';
 
-import { useAuth } from '../components/AuthProvider';
 import { logout } from '../lib/auth';
 import { useRouter } from 'next/navigation';
 

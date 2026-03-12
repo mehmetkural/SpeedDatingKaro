@@ -2,6 +2,7 @@
 
 import { useAuth } from '../../components/AuthProvider';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getOpenEvents, joinEvent } from '../../lib/firestore';
 import { Event } from '../../types';
 import SignOutButton from '../../components/SignOutButton';
@@ -11,6 +12,7 @@ import { SkeletonEventList } from '../../components/Skeleton';
 
 export default function Participant() {
   const { appUser } = useAuth();
+  const router = useRouter();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,7 +35,7 @@ export default function Participant() {
       toast('⏳ Etkinlik dolu. Bekleme listesine alındınız!', { icon: '📋', duration: 5000 });
       return;
     }
-    window.location.href = `/participant/${eventId}`;
+    router.push(`/participant/${eventId}`);
   };
 
   if (loading) return (
