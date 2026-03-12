@@ -24,7 +24,7 @@ export default function Admin() {
   }, [appUser]);
 
   if (appUser?.role !== 'admin') return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white text-lg">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500">
       Erişim Reddedildi
     </div>
   );
@@ -59,120 +59,142 @@ export default function Admin() {
   const activeEvents = events.filter(e => e.status === 'active').length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Admin Paneli</h1>
+    <div className="min-h-screen bg-slate-50">
+      <header className="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+          <h1 className="text-lg font-bold text-slate-900">Admin Paneli</h1>
           <SignOutButton />
         </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 py-6 space-y-4">
 
         {/* Summary stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="p-4 bg-gradient-to-br from-blue-900 to-blue-800 rounded border border-blue-700 text-center">
-            <p className="text-2xl font-bold text-white">{users.length}</p>
-            <p className="text-xs text-blue-300">Toplam Kullanıcı</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-center">
+            <p className="text-2xl font-bold text-slate-900">{users.length}</p>
+            <p className="text-xs text-slate-500 mt-0.5">Kullanıcı</p>
           </div>
-          <div className="p-4 bg-gradient-to-br from-purple-900 to-purple-800 rounded border border-purple-700 text-center">
-            <p className="text-2xl font-bold text-white">{totalEvents}</p>
-            <p className="text-xs text-purple-300">Toplam Etkinlik</p>
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-center">
+            <p className="text-2xl font-bold text-slate-900">{totalEvents}</p>
+            <p className="text-xs text-slate-500 mt-0.5">Etkinlik</p>
           </div>
-          <div className="p-4 bg-gradient-to-br from-green-900 to-green-800 rounded border border-green-700 text-center">
-            <p className="text-2xl font-bold text-white">{completedEvents}</p>
-            <p className="text-xs text-green-300">Tamamlanan</p>
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-center">
+            <p className="text-2xl font-bold text-slate-900">{completedEvents}</p>
+            <p className="text-xs text-slate-500 mt-0.5">Tamamlanan</p>
           </div>
         </div>
 
-        <div className="flex gap-4 mb-6 border-b border-gray-700">
+        {/* Tabs */}
+        <div className="flex border-b border-slate-200">
           <button
             onClick={() => setTab('users')}
-            className={`px-4 py-2 font-bold rounded-t transition ${tab === 'users' ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+            className={`px-4 py-2.5 text-sm font-semibold transition border-b-2 -mb-px ${
+              tab === 'users'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
           >
             Kullanıcılar ({users.length})
           </button>
           <button
             onClick={() => setTab('events')}
-            className={`px-4 py-2 font-bold rounded-t transition ${tab === 'events' ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+            className={`px-4 py-2.5 text-sm font-semibold transition border-b-2 -mb-px flex items-center gap-2 ${
+              tab === 'events'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
           >
             Etkinlikler ({events.length})
-            {activeEvents > 0 && <span className="ml-2 px-1.5 py-0.5 bg-green-500 text-white text-xs rounded-full">{activeEvents} aktif</span>}
+            {activeEvents > 0 && (
+              <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                {activeEvents} aktif
+              </span>
+            )}
           </button>
         </div>
 
         {tab === 'users' && (
-          <div>
+          <div className="space-y-3">
             <input
               type="text"
               placeholder="İsim veya email ile ara..."
               value={userSearch}
               onChange={e => setUserSearch(e.target.value)}
-              className="w-full mb-4 p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition text-sm"
             />
             {filteredUsers.length === 0 ? (
-              <div className="text-center py-12 bg-gray-800 rounded border border-gray-700">
-                <p className="text-gray-400">{userSearch ? 'Kullanıcı bulunamadı' : 'Henüz kullanıcı yok'}</p>
+              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                <p className="text-slate-400 text-sm">{userSearch ? 'Kullanıcı bulunamadı' : 'Henüz kullanıcı yok'}</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {filteredUsers.map(user => (
-                  <div key={user.uid} className="flex justify-between items-center p-4 border border-gray-700 rounded bg-gray-800 hover:bg-gray-700 transition">
-                    <div className="flex-1">
-                      <p className="font-bold text-white">{user.displayName}</p>
-                      <p className="text-sm text-gray-400">{user.email}</p>
-                    </div>
-                    <select
-                      value={user.role}
-                      onChange={(e) => handleRoleChange(user.uid, e.target.value)}
-                      className="p-2 border border-gray-600 rounded bg-gray-700 text-white focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="participant">Katılımcı</option>
-                      <option value="moderator">Moderatör</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                ))}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <ul className="divide-y divide-slate-100">
+                  {filteredUsers.map(user => (
+                    <li key={user.uid} className="flex items-center px-4 py-3 gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                        {user.displayName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-900 text-sm truncate">{user.displayName}</p>
+                        <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                      </div>
+                      <select
+                        value={user.role}
+                        onChange={(e) => handleRoleChange(user.uid, e.target.value)}
+                        className="px-2 py-1.5 border border-slate-300 rounded-lg bg-white text-slate-700 text-xs font-medium focus:outline-none focus:border-blue-500 transition shrink-0"
+                      >
+                        <option value="participant">Katılımcı</option>
+                        <option value="moderator">Moderatör</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
         )}
 
         {tab === 'events' && (
-          <div>
+          <div className="space-y-3">
             <input
               type="text"
               placeholder="Etkinlik adı ile ara..."
               value={eventSearch}
               onChange={e => setEventSearch(e.target.value)}
-              className="w-full mb-4 p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition text-sm"
             />
             {filteredEvents.length === 0 ? (
-              <div className="text-center py-12 bg-gray-800 rounded border border-gray-700">
-                <p className="text-gray-400">{eventSearch ? 'Etkinlik bulunamadı' : 'Henüz etkinlik yok'}</p>
+              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                <p className="text-slate-400 text-sm">{eventSearch ? 'Etkinlik bulunamadı' : 'Henüz etkinlik yok'}</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {filteredEvents.map(event => {
                   const stats = eventStats[event.eventId];
                   return (
-                    <div key={event.eventId} className="p-4 border border-gray-700 rounded bg-gray-800">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="font-bold text-lg text-white">{event.title}</p>
-                          <p className="text-sm text-gray-400">
-                            Oluşturan: {event.createdBy.slice(0, 8)}...
-                            {event.location && <span> · 📍 {event.location}</span>}
+                    <div key={event.eventId} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-900 truncate">{event.title}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {event.location && <span>📍 {event.location} · </span>}
+                            {event.tableCount} masa · {event.sessionDurationSeconds / 60}dk/tur
                           </p>
                         </div>
-                        <div className="flex items-center gap-2 ml-3">
-                          <span className={`px-3 py-1 rounded text-white text-sm font-medium ${
-                            event.status === 'waiting' ? 'bg-yellow-600' :
-                            event.status === 'active' ? 'bg-green-600' : 'bg-gray-600'
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                            event.status === 'waiting' ? 'bg-amber-100 text-amber-700' :
+                            event.status === 'active' ? 'bg-green-100 text-green-700' :
+                            'bg-slate-100 text-slate-600'
                           }`}>
                             {event.status === 'waiting' ? 'Bekleniyor' : event.status === 'active' ? 'Aktif' : 'Tamamlandı'}
                           </span>
                           <button
                             onClick={() => handleLoadStats(event.eventId)}
                             disabled={loadingStats === event.eventId}
-                            className="px-3 py-1 bg-blue-700 hover:bg-blue-600 text-white text-sm rounded transition disabled:opacity-50"
+                            className="px-2.5 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold rounded-lg transition disabled:opacity-50 border border-blue-100"
                           >
                             {loadingStats === event.eventId ? '...' : stats ? '📊' : 'İstatistik'}
                           </button>
@@ -181,24 +203,17 @@ export default function Admin() {
 
                       {stats && (
                         <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          <div className="p-2 bg-gray-700 rounded text-center">
-                            <p className="text-lg font-bold text-white">{stats.totalParticipants}</p>
-                            <p className="text-xs text-gray-400">Katılımcı</p>
-                          </div>
-                          <div className="p-2 bg-gray-700 rounded text-center">
-                            <p className="text-lg font-bold text-white">{stats.completedMatches}/{stats.totalMatches}</p>
-                            <p className="text-xs text-gray-400">Maç</p>
-                          </div>
-                          <div className="p-2 bg-gray-700 rounded text-center">
-                            <p className="text-lg font-bold text-white">{stats.completionRate}%</p>
-                            <p className="text-xs text-gray-400">Tamamlanma</p>
-                          </div>
-                          <div className="p-2 bg-gray-700 rounded text-center">
-                            <p className="text-lg font-bold text-white">
-                              {stats.avgMatchDurationSeconds != null ? `${Math.round(stats.avgMatchDurationSeconds)}s` : '—'}
-                            </p>
-                            <p className="text-xs text-gray-400">Ort. Süre</p>
-                          </div>
+                          {[
+                            { label: 'Katılımcı', value: stats.totalParticipants },
+                            { label: 'Maç', value: `${stats.completedMatches}/${stats.totalMatches}` },
+                            { label: 'Tamamlanma', value: `${stats.completionRate}%` },
+                            { label: 'Ort. Süre', value: stats.avgMatchDurationSeconds != null ? `${Math.round(stats.avgMatchDurationSeconds)}s` : '—' },
+                          ].map(({ label, value }) => (
+                            <div key={label} className="bg-slate-50 rounded-xl p-2 text-center border border-slate-100">
+                              <p className="text-base font-bold text-slate-900">{value}</p>
+                              <p className="text-xs text-slate-400">{label}</p>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -208,7 +223,7 @@ export default function Admin() {
             )}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
