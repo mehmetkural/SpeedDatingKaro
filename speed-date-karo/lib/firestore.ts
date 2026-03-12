@@ -174,6 +174,41 @@ export const getUserProfile = async (uid: string): Promise<AppUser | null> => {
   return { ...data, createdAt: data.createdAt?.toDate() || new Date() } as AppUser;
 };
 
+export interface EventStats {
+  totalMatches: number;
+  completedMatches: number;
+  completionRate: number;
+  avgMatchDurationSeconds: number | null;
+  totalParticipants: number;
+}
+
+export const getEventStats = async (eventId: string): Promise<EventStats> => {
+  const [matchesSnap, participantsSnap] = await Promise.all([
+    getDocs(collection(db, 'events', eventId, 'matches')),
+    getDocs(collection(db, 'events', eventId, 'participants')),
+  ]);
+
+  const matches = matchesSnap.docs.map(d => d.data());
+  const totalMatches = matches.length;
+  const completedMatches = matches.filter(m => m.status === 'completed').length;
+
+  const durations = matches
+    .filter(m => m.sessionStartedAt && m.sessionEndedAt)
+    .map(m => (m.sessionEndedAt.toDate().getTime() - m.sessionStartedAt.toDate().getTime()) / 1000);
+
+  const avgMatchDurationSeconds = durations.length > 0
+    ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+    : null;
+
+  return {
+    totalMatches,
+    completedMatches,
+    completionRate: totalMatches > 0 ? Math.round((completedMatches / totalMatches) * 100) : 0,
+    avgMatchDurationSeconds,
+    totalParticipants: participantsSnap.size,
+  };
+};
+
 export const getAllEvents = async (): Promise<Event[]> => {
   const querySnapshot = await getDocs(collection(db, 'events'));
   return querySnapshot.docs.map(d => mapEvent(d.id, d.data()));
