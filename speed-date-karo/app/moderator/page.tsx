@@ -7,6 +7,14 @@ import { Event } from '../../types';
 import Link from 'next/link';
 import SignOutButton from '../../components/SignOutButton';
 import { SkeletonEventList } from '../../components/Skeleton';
+import toast from 'react-hot-toast';
+
+const statusLabel = (s: Event['status']) =>
+  s === 'completed' ? 'Tamamlandı' : s === 'active' ? 'Devam Ediyor' : 'Bekleniyor';
+const statusClass = (s: Event['status']) =>
+  s === 'completed' ? 'bg-slate-100 text-slate-600'
+    : s === 'active' ? 'bg-green-100 text-green-700'
+      : 'bg-amber-100 text-amber-700';
 
 export default function Moderator() {
   const { appUser } = useAuth();
@@ -19,57 +27,102 @@ export default function Moderator() {
     }
   }, [appUser]);
 
-  if (appUser?.role !== 'moderator') return <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white text-lg">Erişim Reddedildi</div>;
+  if (appUser?.role !== 'moderator') return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500">
+      Erişim Reddedildi
+    </div>
+  );
 
   const handleDelete = async (eventId: string) => {
-    if (confirm('Silmek istediğinize emin misiniz?')) {
+    if (!confirm('Bu etkinliği silmek istediğinize emin misiniz?')) return;
+    try {
       await deleteEvent(eventId);
       setEvents(events.filter(e => e.eventId !== eventId));
+      toast.success('Etkinlik silindi');
+    } catch {
+      toast.error('Etkinlik silinemedi');
     }
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div className="h-8 w-48 bg-gray-700 rounded animate-pulse" />
-          <div className="h-8 w-20 bg-gray-700 rounded animate-pulse" />
-        </div>
-        <SkeletonEventList />
-      </div>
+    <div className="min-h-screen bg-slate-50">
+      <div className="bg-white border-b border-slate-200 h-14" />
+      <div className="max-w-4xl mx-auto px-4 py-6"><SkeletonEventList /></div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Etkinliklerim</h1>
-          <SignOutButton />
+    <div className="min-h-screen bg-slate-50">
+      <header className="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+          <h1 className="text-lg font-bold text-slate-900">Etkinliklerim</h1>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/moderator/create"
+              className="px-4 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition shadow-sm"
+            >
+              + Yeni
+            </Link>
+            <SignOutButton />
+          </div>
         </div>
-        <Link href="/moderator/create" className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 mb-6 inline-block rounded hover:from-green-600 hover:to-green-700 transition font-semibold shadow-lg">+ Etkinlik Oluştur</Link>
+      </header>
 
+      <main className="max-w-4xl mx-auto px-4 py-6">
         {events.length === 0 ? (
-          <div className="text-center py-12 bg-gray-800 rounded border border-gray-700">
-            <p className="text-gray-400 text-lg">Henüz etkinlik yok. Yeni bir etkinlik oluşturun!</p>
+          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div className="text-4xl mb-3">📅</div>
+            <p className="text-slate-500 font-medium">Henüz etkinlik yok</p>
+            <Link
+              href="/moderator/create"
+              className="inline-block mt-4 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition shadow-sm"
+            >
+              İlk Etkinliği Oluştur
+            </Link>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="space-y-3">
             {events.map(event => (
-              <div key={event.eventId} className="flex justify-between items-center p-4 border border-gray-700 rounded bg-gray-800 hover:bg-gray-700 transition">
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-white">{event.title}</h3>
-                  <p className="text-sm text-gray-400">Durum: <span className={event.status === 'active' ? 'text-green-400 font-semibold' : 'text-yellow-400 font-semibold'}>{event.status === 'active' ? 'Aktif' : 'Bekleniyor'}</span> | Masalar: {event.tableCount}</p>
-                </div>
-                <div className="space-x-2 flex">
-                  <Link href={`/moderator/${event.eventId}`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition inline-block font-semibold">Görüntüle</Link>
-                  <button onClick={() => handleDelete(event.eventId)} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition font-semibold">Sil</button>
+              <div key={event.eventId} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-slate-900">{event.title}</h3>
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusClass(event.status)}`}>
+                        {statusLabel(event.status)}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
+                      {event.location && <span className="text-xs text-slate-400">📍 {event.location}</span>}
+                      {event.scheduledAt && (
+                        <span className="text-xs text-slate-400">
+                          🗓 {new Date(event.scheduledAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                      )}
+                      <span className="text-xs text-slate-400">🪑 {event.tableCount} masa</span>
+                      <span className="text-xs text-slate-400">⏱ {event.sessionDurationSeconds / 60} dk/tur</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      href={`/moderator/${event.eventId}`}
+                      className="px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg hover:bg-blue-100 transition"
+                    >
+                      Yönet
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(event.eventId)}
+                      className="px-3 py-1.5 bg-red-50 text-red-600 text-sm font-semibold rounded-lg hover:bg-red-100 transition"
+                    >
+                      Sil
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
