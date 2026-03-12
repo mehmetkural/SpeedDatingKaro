@@ -23,8 +23,8 @@ export default function ProfilePage() {
   }, [appUser]);
 
   if (!appUser) return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white">
-      Yükleniyor...
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
@@ -46,61 +46,78 @@ export default function ProfilePage() {
   const backHref = appUser.role === 'moderator' ? '/moderator' : appUser.role === 'admin' ? '/admin' : '/participant';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
-      <div className="max-w-lg mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Profilim</h1>
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href={backHref} className="text-gray-400 hover:text-white text-sm transition">← Geri</Link>
-            <SignOutButton />
+            <Link href={backHref} className="text-slate-400 hover:text-slate-700 transition text-sm font-medium">← Geri</Link>
+            <h1 className="text-lg font-bold text-slate-900">Profilim</h1>
+          </div>
+          <SignOutButton />
+        </div>
+      </header>
+
+      <main className="max-w-lg mx-auto px-4 py-6">
+        {/* Avatar placeholder */}
+        <div className="flex items-center gap-4 mb-6 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shrink-0">
+            {displayName.charAt(0).toUpperCase() || '?'}
+          </div>
+          <div>
+            <p className="font-semibold text-slate-900">{displayName || 'İsim girilmedi'}</p>
+            <p className="text-sm text-slate-500">{appUser.email}</p>
+            <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+              {appUser.role === 'admin' ? 'Admin' : appUser.role === 'moderator' ? 'Moderatör' : 'Katılımcı'}
+            </span>
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-5">
-          <div className="p-6 bg-gray-800 rounded-xl border border-gray-700 space-y-4">
-            <div>
-              <label className="block text-sm font-bold text-gray-300 mb-2">Adınız</label>
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">Adınız</label>
               <input
                 type="text"
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
-                className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
                 required
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-gray-300 mb-2">Email</label>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">Email</label>
               <input
                 type="text"
                 value={appUser.email}
                 disabled
-                className="w-full p-3 border border-gray-600 rounded bg-gray-900 text-gray-500 cursor-not-allowed"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-slate-400 cursor-not-allowed"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-gray-300 mb-2">Hakkımda</label>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">Hakkımda</label>
               <textarea
                 value={bio}
                 onChange={e => setBio(e.target.value)}
                 placeholder="Kendinizden kısaca bahsedin..."
                 rows={3}
                 maxLength={200}
-                className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+                className="w-full px-3 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition resize-none"
               />
-              <p className="text-xs text-gray-500 mt-1">{bio.length}/200</p>
+              <p className="text-xs text-slate-400 text-right">{bio.length}/200</p>
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-gray-300 mb-2">İlgi Alanları</label>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">İlgi Alanları</label>
               <input
                 type="text"
                 value={interests}
                 onChange={e => setInterests(e.target.value)}
                 placeholder="örn: müzik, seyahat, yemek..."
                 maxLength={100}
-                className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
               />
             </div>
           </div>
@@ -108,18 +125,18 @@ export default function ProfilePage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg"
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
           >
             {saving ? 'Kaydediliyor...' : 'Kaydet'}
           </button>
 
           {saved && (
-            <div className="text-center p-3 bg-green-800 border border-green-600 rounded text-green-200 font-semibold">
+            <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium text-center">
               ✓ Profil güncellendi!
             </div>
           )}
         </form>
-      </div>
+      </main>
     </div>
   );
 }
