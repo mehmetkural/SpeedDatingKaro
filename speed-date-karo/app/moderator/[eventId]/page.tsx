@@ -154,7 +154,10 @@ export default function ModeratorEventView() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{event.title}</h1>
+          <div className="flex items-center gap-3">
+            <Link href="/moderator" className="text-gray-400 hover:text-white transition text-sm font-semibold">← Geri</Link>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">{event.title}</h1>
+          </div>
           <SignOutButton />
         </div>
 
