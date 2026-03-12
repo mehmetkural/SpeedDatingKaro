@@ -26,60 +26,73 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
+
+        {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">SpeedDate Karo</h1>
-          <p className="text-gray-400">Hız sevişme etkinliklerine hoş geldiniz</p>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg mb-4">
+            <span className="text-3xl">💘</span>
+          </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            SpeedDate Karo
+          </h1>
+          <p className="text-slate-500 mt-1 text-sm">Hızlı tanışma etkinlikleri</p>
         </div>
-        
-        <form onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded border border-gray-700 space-y-4">
-          <h2 className="text-2xl font-bold text-white mb-4">Giriş Yap</h2>
-          
+
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+          <h2 className="text-xl font-bold text-slate-900">Giriş Yap</h2>
+
           {error && (
-            <div className="p-3 bg-red-900 border border-red-700 rounded text-red-200 text-sm">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
               {error}
             </div>
           )}
-          
-          <div>
-            <label className="block text-sm font-bold text-gray-300 mb-2">Email Adresi</label>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700">Email</label>
             <input
               type="email"
-              placeholder="example@mail.com"
+              placeholder="ornek@mail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
               required
               disabled={loading}
             />
           </div>
-          
-          <div>
-            <label className="block text-sm font-bold text-gray-300 mb-2">Şifre</label>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700">Şifre</label>
             <input
               type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
               required
               disabled={loading}
             />
           </div>
-          
-          <button 
-            type="submit" 
+
+          <button
+            type="submit"
+            onClick={handleSubmit}
             disabled={loading || !email || !password}
-            className="w-full p-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg"
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
           >
             {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
           </button>
-          
-          <div className="text-center pt-4 border-t border-gray-700">
-            <p className="text-gray-400">Hesabınız yok mu? <Link href="/register" className="text-blue-400 hover:text-blue-300 font-semibold">Kaydol</Link></p>
+
+          <div className="text-center pt-2 border-t border-slate-100">
+            <p className="text-slate-500 text-sm">
+              Hesabınız yok mu?{' '}
+              <Link href="/register" className="text-blue-600 hover:text-blue-700 font-semibold">
+                Kaydol
+              </Link>
+            </p>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
